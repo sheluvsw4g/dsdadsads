@@ -93,6 +93,17 @@ jobs:
             chmod +x download_bootstraps.sh
             bash ./download_bootstraps.sh
 
+      - name: Build Custom Sileo
+        run: |
+          set -x
+          if [ -d "sileo" ]; then
+            gmake -C sileo package SILEO_PLATFORM=iphoneos-arm64 || true
+            if ls sileo/packages/*.deb 1> /dev/null 2>&1; then
+              cp -f sileo/packages/*.deb Application/Dopamine/Resources/sileo.deb
+            fi
+          fi
+
+
       - name: Build
         run: |
           set -x

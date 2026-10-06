@@ -79,19 +79,40 @@
     self.iconView.layer.cornerRadius = (10.0 / 57.0) * self.iconView.bounds.size.width;
 }
 
+-(void)setLocked:(BOOL)locked {
+    _locked = locked;
+    if (locked) {
+        self.selector.image = [UIImage systemImageNamed:@"lock.fill"];
+        self.selector.tintColor = [UIColor colorWithWhite:1.0 alpha:0.35];
+        self.alpha = 0.45;
+        self.userInteractionEnabled = NO;
+    } else {
+        self.alpha = 1.0;
+        self.userInteractionEnabled = YES;
+        [self setSelected:self.selected];
+    }
+}
+
 -(void)setSelected:(BOOL)selected {
     _selected = selected;
-    self.selector.image = selected ? [UIImage systemImageNamed:@"checkmark.circle.fill"] : [UIImage systemImageNamed:@"circle"];
-    self.selector.tintColor = selected ? [UIColor whiteColor] : [UIColor colorWithWhite:1.0 alpha:0.5];
+    if (self.locked) {
+        self.selector.image = [UIImage systemImageNamed:@"lock.fill"];
+        self.selector.tintColor = [UIColor colorWithWhite:1.0 alpha:0.35];
+    } else {
+        self.selector.image = selected ? [UIImage systemImageNamed:@"checkmark.circle.fill"] : [UIImage systemImageNamed:@"circle"];
+        self.selector.tintColor = selected ? [UIColor whiteColor] : [UIColor colorWithWhite:1.0 alpha:0.5];
+    }
 }
 
 -(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (self.locked) return;
     [super touchesBegan:touches withEvent:event];
     [self.hapticGenerator impactOccurred];
     self.iconView.alpha = 0.75;
 }
 
 -(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (self.locked) return;
     [super touchesEnded:touches withEvent:event];
     [UIView animateWithDuration:0.2 animations:^{
         self.iconView.alpha = 1.0;

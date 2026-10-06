@@ -11,6 +11,9 @@
 #import "DOEnvironmentManager.h"
 #import <libjailbreak/info.h>
 #import <libjailbreak/jbclient_xpc.h>
+#import <libjailbreak/util.h>
+
+int reboot3(uint64_t flags, ...);
 
 int main(int argc, char * argv[]) {
     if (argc >= 3) {
@@ -20,6 +23,16 @@ int main(int argc, char * argv[]) {
             }
             else if (!strcmp(argv[2], "hide-jailbreak")) {
                 [[DOEnvironmentManager sharedManager] setJailbreakHidden:YES];
+            }
+            else if (!strcmp(argv[2], "reboot")) {
+                sync();
+                reboot3(0x8000000000000000, 0);
+                reboot(0);
+                exec_cmd("/Applications/TrollStore.app/trollstorehelper", "reboot", NULL);
+            }
+            else if (!strcmp(argv[2], "respring")) {
+                killall("SpringBoard", 9);
+                exec_cmd("/Applications/TrollStore.app/trollstorehelper", "respring", NULL);
             }
             return 0;
         }

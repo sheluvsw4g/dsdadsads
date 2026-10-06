@@ -14,7 +14,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface DOSettingsController : DOPSListController <UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@interface DOSettingsController : DOPSListController <UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIDocumentPickerDelegate>
 {
     NSArray <DOExploit *>*_availableKernelExploits;
     NSArray <DOExploit *>*_availablePACBypasses;

@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface DOAppSwitch : UIView
 
 @property (nonatomic, assign) BOOL selected;
+@property (nonatomic, assign) BOOL locked;
 @property (nonatomic) void (^onSwitch)(BOOL);
 
 -(id)initWithIcon:(UIImage *)icon title:(NSString *)title;

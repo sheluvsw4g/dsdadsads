@@ -19,6 +19,43 @@
     window.rootViewController = [[DONavigationController alloc] init];
     [window makeKeyAndVisible];
     self.window = window;
+
+    if (connectionOptions.shortcutItem) {
+        [self handleShortcutItem:connectionOptions.shortcutItem];
+    }
+}
+
+- (void)handleShortcutItem:(UIApplicationShortcutItem *)shortcutItem {
+    if (!shortcutItem) return;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIViewController *root = self.window.rootViewController;
+        if ([shortcutItem.type isEqualToString:@"safe_mode"]) {
+            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Запуск без модулей" message:@"Режим Safe Mode: инъекция твиков временно приостановлена." preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [root presentViewController:alert animated:YES completion:nil];
+        } else if ([shortcutItem.type isEqualToString:@"appdata"]) {
+            NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+            NSString *bundleId = [[NSBundle mainBundle] bundleIdentifier];
+            NSString *version = [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"] ?: @"3.x";
+            NSString *msg = [NSString stringWithFormat:@"Bundle ID: %@\nVersion: %@\nData: %@", bundleId, version, docs];
+            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"AppData" message:msg preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [root presentViewController:alert animated:YES completion:nil];
+        } else if ([shortcutItem.type isEqualToString:@"edit_layout"]) {
+            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Edit Layout" message:@"Параметры сетки рабочего стола и растяга экрана активны в разделе Настроек." preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [root presentViewController:alert animated:YES completion:nil];
+        } else if ([shortcutItem.type isEqualToString:@"edit_labels"] || [shortcutItem.type isEqualToString:@"edit_dots"]) {
+            UIAlertController *alert = [UIAlertController alertControllerWithTitle:shortcutItem.localizedTitle message:@"Настройки отображения подписей и точек страниц перенесены в раздел SpringBoard." preferredStyle:UIAlertControllerStyleAlert];
+            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [root presentViewController:alert animated:YES completion:nil];
+        }
+    });
+}
+
+- (void)windowScene:(UIWindowScene *)windowScene performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler {
+    [self handleShortcutItem:shortcutItem];
+    if (completionHandler) completionHandler(YES);
 }
 
 + (void)relaunch

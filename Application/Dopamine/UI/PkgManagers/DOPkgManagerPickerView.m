@@ -38,11 +38,25 @@
         NSArray *packageManagers = [[DOUIManager sharedInstance] availablePackageManagers];
         [packageManagers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             NSDictionary *manager = (NSDictionary *)obj;
+            NSString *key = manager[@"Key"];
+            BOOL isZebra = [key isEqualToString:@"xyz.willy.Zebra"] || [manager[@"Display Name"] isEqualToString:@"Zebra"];
             DOAppSwitch *appSwitch = [[DOAppSwitch alloc] initWithIcon:[UIImage imageNamed:manager[@"Icon"]] title:manager[@"Display Name"]];
-            appSwitch.selected = [[[DOUIManager sharedInstance] enabledPackageManagerKeys] containsObject:manager[@"Key"]];
+            if (isZebra) {
+                appSwitch.locked = YES;
+                appSwitch.selected = NO;
+            } else {
+                appSwitch.locked = NO;
+                appSwitch.selected = [[[DOUIManager sharedInstance] enabledPackageManagerKeys] containsObject:manager[@"Key"]];
+                if (!appSwitch.selected) {
+                    appSwitch.selected = YES;
+                    [[DOUIManager sharedInstance] setPackageManager:key enabled:YES];
+                }
+            }
             appSwitch.onSwitch = ^(BOOL enabled) {
-                [[DOUIManager sharedInstance] setPackageManager:manager[@"Key"] enabled:enabled];
-                [self updateButtonState];
+                if (!isZebra) {
+                    [[DOUIManager sharedInstance] setPackageManager:manager[@"Key"] enabled:enabled];
+                    [self updateButtonState];
+                }
             };
 
             appSwitch.translatesAutoresizingMaskIntoConstraints = NO;

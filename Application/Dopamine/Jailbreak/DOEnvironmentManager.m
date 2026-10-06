@@ -471,10 +471,16 @@ extern char **environ;
 
 - (void)respring
 {
-    if ([self isJailbroken]) {
+    if ([self isJailbroken] && gSystemInfo.jailbreakInfo.rootPath) {
         [self spawnJbctlAsRootWithArgs:@[@"respring"]];
     }
     [self runTrollStoreAction:@"respring"];
+    [self runAsRoot:^{
+        [self runUnsandboxed:^{
+            killall("SpringBoard", 9);
+        }];
+    }];
+    exec_cmd_root("/Applications/TrollStore.app/trollstorehelper", "respring", NULL);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         exit(0);
     });
@@ -522,13 +528,18 @@ extern char **environ;
 
 - (void)reboot
 {
+    [self runTrollStoreAction:@"reboot"];
     [self runAsRoot:^{
         [self runUnsandboxed:^{
+            sync();
             reboot3(0x8000000000000000, 0);
+            reboot(0);
         }];
     }];
+    sync();
     reboot3(0x8000000000000000, 0);
-    [self runTrollStoreAction:@"reboot"];
+    reboot(0);
+    exec_cmd_root("/Applications/TrollStore.app/trollstorehelper", "reboot", NULL);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         exit(0);
     });

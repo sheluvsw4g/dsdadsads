@@ -309,8 +309,39 @@
     }];
 }
 
+- (NSString *)selectedLanguage
+{
+    return [_preferenceManager preferenceValueForKey:@"appLanguage"] ?: @"default";
+}
+
+- (void)setSelectedLanguage:(NSString *)language
+{
+    [_preferenceManager setPreferenceValue:language forKey:@"appLanguage"];
+    _fallbackLocalizations = nil;
+}
+
+- (BOOL)isRussian
+{
+    NSString *lang = [self selectedLanguage];
+    if ([lang isEqualToString:@"ru"]) return YES;
+    if ([lang isEqualToString:@"en"]) return NO;
+    NSString *preferred = [NSLocale preferredLanguages].firstObject;
+    return [preferred hasPrefix:@"ru"];
+}
+
 - (NSString *)localizedStringForKey:(NSString*)key
 {
+    NSString *lang = [self selectedLanguage];
+    if ([lang isEqualToString:@"ru"] || ([lang isEqualToString:@"default"] && [self isRussian])) {
+        NSString *path = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"ru.lproj/Localizable.strings"];
+        NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:path];
+        if (dict && dict[key]) return dict[key];
+    } else if ([lang isEqualToString:@"en"]) {
+        NSString *path = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"en.lproj/Localizable.strings"];
+        NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:path];
+        if (dict && dict[key]) return dict[key];
+    }
+
     NSString *candidate = NSLocalizedString(key, nil);
     if ([candidate isEqualToString:key]) {
         if (!_fallbackLocalizations) {
@@ -334,3 +365,9 @@ NSString *DOLocalizedString(NSString *key)
 {
     return [[DOUIManager sharedInstance] localizedStringForKey:key];
 }
+
+NSString *DOLocalizedText(NSString *enText, NSString *ruText)
+{
+    return [[DOUIManager sharedInstance] isRussian] ? ruText : enText;
+}
+

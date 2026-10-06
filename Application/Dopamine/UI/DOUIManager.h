@@ -44,11 +44,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)resetPackageManagers;
 - (void)resetSettings;
 - (void)setPackageManager:(NSString*)key enabled:(BOOL)enabled;
+- (NSString *)selectedLanguage;
+- (void)setSelectedLanguage:(NSString *)language;
+- (BOOL)isRussian;
 - (NSString *)localizedStringForKey:(NSString*)key;
 - (UIImage *)renderBootLogo;
 
 @end
 
 NSString *DOLocalizedString(NSString *string);
+NSString *DOLocalizedText(NSString *enText, NSString *ruText);
 
 NS_ASSUME_NONNULL_END

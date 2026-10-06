@@ -11,12 +11,19 @@ export BUILD_STANDALONE = 1
 endif
 
 all:
+	@if [ -d "sileo" ] && [ -f "sileo/Makefile" ]; then \
+		$(MAKE) -C sileo package SILEO_PLATFORM=iphoneos-arm64 || true; \
+		if ls sileo/packages/*.deb 1> /dev/null 2>&1; then \
+			cp -f sileo/packages/*.deb Application/Dopamine/Resources/sileo.deb; \
+		fi \
+	fi
 	@$(MAKE) -C BaseBin
 	@$(MAKE) -C Packages
 	@$(MAKE) -C Application
 	@$(MAKE) -C Standalone
 
 clean:
+	@if [ -d "sileo" ] && [ -f "sileo/Makefile" ]; then $(MAKE) -C sileo clean || true; fi
 	@$(MAKE) -C BaseBin clean
 	@$(MAKE) -C Packages clean
 	@$(MAKE) -C Application clean
