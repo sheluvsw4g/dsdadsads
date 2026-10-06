@@ -923,17 +923,55 @@
 
 - (void)applyDopamineChangesPressed
 {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Apply Dopamine Tweaks" message:@"Applying MobileGestalt, SpringBoard flags and PosterBoard modifications directly on device..." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Apply Dopamine Tweaks" message:@"Writing MobileGestalt, SpringBoard preferences and PosterBoard configurations..." preferredStyle:UIAlertControllerStyleAlert];
     [self presentViewController:alert animated:YES completion:nil];
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [alert dismissViewControllerAnimated:YES completion:^{
-            UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Changes Applied! ⚡" message:@"All modifications have been applied. Restarting SpringBoard to finalize..." preferredStyle:UIAlertControllerStyleAlert];
-            [self presentViewController:doneAlert animated:YES completion:nil];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [[DOEnvironmentManager sharedManager] respring];
-            });
-        }];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        // 1. SpringBoard Managed Preferences Plist
+        NSString *sbPlistPath = @"/var/Managed Preferences/mobile/com.apple.springboard.plist";
+        NSMutableDictionary *sbDict = [NSMutableDictionary dictionaryWithContentsOfFile:sbPlistPath] ?: [NSMutableDictionary new];
+        
+        BOOL diScreenshots = [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"dopamine_di_in_screenshots" fallback:NO];
+        BOOL disableLPM = [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"dopamine_disable_lpm_alert" fallback:NO];
+        
+        sbDict[@"SBAlwaysShowSystemApertureInSnapshots"] = @(diScreenshots);
+        sbDict[@"SBHideLowPowerAlerts"] = @(disableLPM);
+        [sbDict writeToFile:sbPlistPath atomically:YES];
+
+        // 2. AirDrop Managed Preferences Plist
+        BOOL airdropLimit = [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"dopamine_airdrop_limit" fallback:NO];
+        NSString *airdropPath = @"/var/Managed Preferences/mobile/com.apple.sharingd.plist";
+        NSMutableDictionary *airdropDict = [NSMutableDictionary dictionaryWithContentsOfFile:airdropPath] ?: [NSMutableDictionary new];
+        airdropDict[@"OverrideTimeLimitEveryoneMode"] = @(airdropLimit);
+        [airdropDict writeToFile:airdropPath atomically:YES];
+
+        // 3. Lockscreen footnote
+        NSString *footnote = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_lockscreen_footnote"] ?: @"";
+        if (footnote.length) {
+            NSString *footnotePath = @"/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/SharedDeviceConfiguration.plist";
+            NSMutableDictionary *fnDict = [NSMutableDictionary dictionaryWithContentsOfFile:footnotePath] ?: [NSMutableDictionary new];
+            fnDict[@"LockScreenFootnote"] = footnote;
+            [fnDict writeToFile:footnotePath atomically:YES];
+        }
+
+        // 4. Feature Flags Global Plist (Clock Animation)
+        BOOL clockAnim = [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"dopamine_clock_animation" fallback:NO];
+        NSString *ffPath = @"/var/preferences/FeatureFlags/Global.plist";
+        NSMutableDictionary *ffDict = [NSMutableDictionary dictionaryWithContentsOfFile:ffPath] ?: [NSMutableDictionary new];
+        NSMutableDictionary *sbFF = [ffDict[@"SpringBoard"] mutableCopy] ?: [NSMutableDictionary new];
+        sbFF[@"SwiftUITimeAnimation"] = @{@"Enabled": @(clockAnim)};
+        ffDict[@"SpringBoard"] = sbFF;
+        [ffDict writeToFile:ffPath atomically:YES];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [alert dismissViewControllerAnimated:YES completion:^{
+                UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Modifications Applied! ⚡" message:@"Configurations saved directly to device system. Restarting SpringBoard..." preferredStyle:UIAlertControllerStyleAlert];
+                [self presentViewController:doneAlert animated:YES completion:nil];
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    [[DOEnvironmentManager sharedManager] respring];
+                });
+            }];
+        });
     });
 }
 
