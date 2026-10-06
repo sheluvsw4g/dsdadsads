@@ -204,6 +204,148 @@ static void startSpringBoardGravity(UIWindow *window) {
 
 %end
 
+@interface SBFLockScreenDateView : UIView
+@property (nonatomic, strong) UIView *timeLabel;
+- (void)updateFormat;
+@end
+
+static void updateAniTimeView(SBFLockScreenDateView *dateView)
+{
+	NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/com.opa334.Dopamine.plist"];
+	BOOL aniEnabled = [prefs[@"dopamine_anitime_enabled"] boolValue];
+	BOOL aimEnabled = [prefs[@"dopamine_aim_pro_enabled"] boolValue];
+
+	const NSInteger kAniStackTag = 948210;
+	UIView *existingStack = [dateView viewWithTag:kAniStackTag];
+
+	UIView *timeLbl = nil;
+	if ([dateView respondsToSelector:@selector(timeLabel)]) {
+		timeLbl = [dateView timeLabel];
+	}
+	if (!timeLbl) {
+		for (UIView *sub in dateView.subviews) {
+			if ([NSStringFromClass([sub class]) containsString:@"Label"] || [NSStringFromClass([sub class]) containsString:@"Legibility"]) {
+				timeLbl = sub;
+				break;
+			}
+		}
+	}
+
+	if (aniEnabled) {
+		if (timeLbl) {
+			timeLbl.alpha = 0.0;
+		}
+
+		if (!existingStack) {
+			existingStack = [[UIStackView alloc] initWithFrame:CGRectZero];
+			existingStack.tag = kAniStackTag;
+			UIStackView *sv = (UIStackView *)existingStack;
+			sv.axis = UILayoutConstraintAxisHorizontal;
+			sv.alignment = UIStackViewAlignmentCenter;
+			sv.distribution = UIStackViewDistributionEqualCentering;
+			sv.spacing = 3;
+			[dateView addSubview:existingStack];
+		}
+
+		existingStack.hidden = NO;
+		UIStackView *sv = (UIStackView *)existingStack;
+		sv.frame = CGRectMake(10, 30, dateView.bounds.size.width - 20, 110);
+
+		for (UIView *sub in [sv.arrangedSubviews copy]) {
+			[sv removeArrangedSubview:sub];
+			[sub removeFromSuperview];
+		}
+
+		NSDateFormatter *df = [NSDateFormatter new];
+		df.dateFormat = @"HH:mm";
+		NSString *timeStr = [df stringFromDate:[NSDate date]];
+		NSString *style = prefs[@"dopamine_anitime_style"] ?: @"m-static";
+
+		NSString *anitimeBase = @"/var/jb/Applications/Dopamine.app/AniTime";
+		if (![[NSFileManager defaultManager] fileExistsAtPath:anitimeBase]) {
+			anitimeBase = @"/Applications/Dopamine.app/AniTime";
+		}
+		NSString *styleDir = [anitimeBase stringByAppendingPathComponent:style];
+
+		CGFloat digitH = 95.0;
+		for (NSUInteger i = 0; i < timeStr.length; i++) {
+			NSString *ch = [timeStr substringWithRange:NSMakeRange(i, 1)];
+			NSString *fn = [ch isEqualToString:@":"] ? @"colon.png" : [NSString stringWithFormat:@"%@.png", ch];
+			NSString *imgPath = [styleDir stringByAppendingPathComponent:fn];
+			UIImage *img = [UIImage imageWithContentsOfFile:imgPath];
+
+			if (img) {
+				UIImageView *iv = [[UIImageView alloc] initWithImage:img];
+				iv.contentMode = UIViewContentModeScaleAspectFit;
+				CGFloat w = (img.size.height > 0) ? (img.size.width / img.size.height * digitH) : 48.0;
+				[iv.widthAnchor constraintEqualToConstant:w].active = YES;
+				[iv.heightAnchor constraintEqualToConstant:digitH].active = YES;
+				[sv addArrangedSubview:iv];
+			} else {
+				UILabel *digitLbl = [UILabel new];
+				digitLbl.text = ch;
+				digitLbl.font = [UIFont systemFontOfSize:65 weight:UIFontWeightBold];
+				digitLbl.textColor = [UIColor whiteColor];
+				[sv addArrangedSubview:digitLbl];
+			}
+		}
+	} else {
+		if (existingStack) {
+			existingStack.hidden = YES;
+		}
+		if (timeLbl) {
+			timeLbl.alpha = 1.0;
+			if (aimEnabled) {
+				NSString *colorPref = prefs[@"dopamine_aim_color"] ?: @"white";
+				UIColor *clockColor = [UIColor whiteColor];
+				if ([colorPref isEqualToString:@"sakura"]) clockColor = [UIColor colorWithRed:1.0 green:0.62 blue:0.78 alpha:1.0];
+				else if ([colorPref isEqualToString:@"cyan"]) clockColor = [UIColor colorWithRed:0.25 green:0.88 blue:1.0 alpha:1.0];
+				else if ([colorPref isEqualToString:@"sunset"]) clockColor = [UIColor colorWithRed:1.0 green:0.48 blue:0.25 alpha:1.0];
+				else if ([colorPref isEqualToString:@"gold"]) clockColor = [UIColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:1.0];
+
+				if ([timeLbl respondsToSelector:@selector(setTextColor:)]) {
+					[(id)timeLbl setTextColor:clockColor];
+				}
+
+				NSString *fontPref = prefs[@"dopamine_aim_font"] ?: @"rounded";
+				UIFont *clockFont = nil;
+				if ([fontPref isEqualToString:@"rounded"]) {
+					UIFontDescriptor *d = [[UIFont systemFontOfSize:80 weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignRounded];
+					clockFont = d ? [UIFont fontWithDescriptor:d size:80] : [UIFont systemFontOfSize:80 weight:UIFontWeightBold];
+				} else if ([fontPref isEqualToString:@"serif"]) {
+					UIFontDescriptor *d = [[UIFont systemFontOfSize:80 weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignSerif];
+					clockFont = d ? [UIFont fontWithDescriptor:d size:80] : [UIFont systemFontOfSize:80 weight:UIFontWeightBold];
+				} else if ([fontPref isEqualToString:@"mono"]) {
+					clockFont = [UIFont monospacedDigitSystemFontOfSize:80 weight:UIFontWeightBold];
+				} else if ([fontPref isEqualToString:@"stencil"]) {
+					clockFont = [UIFont fontWithName:@"Impact" size:80] ?: [UIFont systemFontOfSize:80 weight:UIFontWeightHeavy];
+				} else {
+					clockFont = [UIFont systemFontOfSize:80 weight:UIFontWeightHeavy];
+				}
+				if (clockFont && [timeLbl respondsToSelector:@selector(setFont:)]) {
+					[(id)timeLbl setFont:clockFont];
+				}
+			}
+		}
+	}
+}
+
+%hook SBFLockScreenDateView
+
+- (void)layoutSubviews
+{
+	%orig;
+	updateAniTimeView(self);
+}
+
+- (void)updateFormat
+{
+	%orig;
+	updateAniTimeView(self);
+}
+
+%end
+
 void springboardInit(void)
 {
 	%init();

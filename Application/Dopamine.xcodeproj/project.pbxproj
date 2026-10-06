@@ -10,6 +10,7 @@
 		040622AA2B77FE8E00393AAD /* DOPkgManagerPickerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 040622A92B77FE8E00393AAD /* DOPkgManagerPickerViewController.m */; };
 		042479A22B66916B0082581B /* DOCreditsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0424796B2B66916B0082581B /* DOCreditsViewController.m */; };
 		042479A32B66916B0082581B /* DOSettingsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0424796C2B66916B0082581B /* DOSettingsController.m */; };
+		8C99ANITIME0000000000002 /* AniTime in Resources */ = {isa = PBXBuildFile; fileRef = 8C99ANITIME0000000000001 /* AniTime */; };
 		042479A42B66916B0082581B /* Credits.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0424796F2B66916B0082581B /* Credits.plist */; };
 		042479A52B66916B0082581B /* DOCreditsCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 042479732B66916B0082581B /* DOCreditsCell.m */; };
 		042479A62B66916B0082581B /* DOHeaderCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 042479752B66916B0082581B /* DOHeaderCell.m */; };
@@ -678,6 +679,7 @@
 		8CB408803020101D0097E18B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8CB94F022B59E17A0098BAFD /* basebin.tc */ = {isa = PBXFileReference; lastKnownFileType = file; name = basebin.tc; path = ../../../BaseBin/basebin.tc; sourceTree = "<group>"; };
 		8CB94F032B59E17A0098BAFD /* basebin.tar */ = {isa = PBXFileReference; lastKnownFileType = archive.tar; name = basebin.tar; path = ../../../BaseBin/basebin.tar; sourceTree = "<group>"; };
+		8C99ANITIME0000000000001 /* AniTime */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AniTime; sourceTree = "<group>"; };
 		8CBF1A482EC3B71700EB2308 /* UIImage+JPEG2000.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "UIImage+JPEG2000.h"; sourceTree = "<group>"; };
 		8CBF1A492EC3B71700EB2308 /* UIImage+JPEG2000.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "UIImage+JPEG2000.m"; sourceTree = "<group>"; };
 		8CC139802B53DE6C00230143 /* NSData+Hex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Hex.h"; sourceTree = "<group>"; };
@@ -1434,6 +1436,7 @@
 				8C56D4CC2B7C118B001C03D3 /* LICENSE_kfd.md */,
 				8C5FA9702BDD81EF008C246F /* LICENSE_weightBufs.md */,
 				8C296BAD2BE05914007C2AD1 /* LICENSE_plooshinit.md */,
+				8C99ANITIME0000000000001 /* AniTime */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -2008,6 +2011,7 @@
 				8CB94F042B59E17A0098BAFD /* basebin.tc in Resources */,
 				8C7198282ABF0E84003C6658 /* LaunchScreen.storyboard in Resources */,
 				8C7198252ABF0E84003C6658 /* Assets.xcassets in Resources */,
+				8C99ANITIME0000000000002 /* AniTime in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

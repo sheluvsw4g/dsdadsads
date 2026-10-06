@@ -414,6 +414,306 @@
 
 @end
 
+@interface DOAniTimePreviewViewController : UIViewController
+@property (nonatomic, strong) UIView *clockContainer;
+@property (nonatomic, strong) UILabel *dateLabel;
+@property (nonatomic, strong) UILabel *standardTimeLabel;
+@property (nonatomic, strong) UIStackView *anitimeStackView;
+@property (nonatomic, strong) NSTimer *updateTimer;
+@property (nonatomic, strong) UISegmentedControl *styleSegment;
+@property (nonatomic, strong) UISegmentedControl *fontSegment;
+@property (nonatomic, strong) UISegmentedControl *colorSegment;
+@property (nonatomic, strong) UISwitch *anitimeSwitch;
+@end
+
+@implementation DOAniTimePreviewViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor blackColor];
+
+    CAGradientLayer *bgGrad = [CAGradientLayer layer];
+    bgGrad.frame = [UIScreen mainScreen].bounds;
+    bgGrad.colors = @[
+        (id)[UIColor colorWithRed:0.05 green:0.07 blue:0.15 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.02 green:0.03 blue:0.06 alpha:1.0].CGColor
+    ];
+    [self.view.layer insertSublayer:bgGrad atIndex:0];
+
+    CGFloat screenW = [UIScreen mainScreen].bounds.size.width;
+
+    // Top Header
+    UIView *topBar = [[UIView alloc] initWithFrame:CGRectMake(16, 54, screenW - 32, 50)];
+    UILabel *headerTitle = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, topBar.bounds.size.width - 70, 50)];
+    headerTitle.text = DOLocalizedText(@"AniTime & AIM Pro Preview", @"Предпросмотр AniTime и AIM Pro");
+    headerTitle.font = [UIFont systemFontOfSize:17 weight:UIFontWeightBold];
+    headerTitle.textColor = [UIColor whiteColor];
+    [topBar addSubview:headerTitle];
+
+    UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    closeBtn.frame = CGRectMake(topBar.bounds.size.width - 64, 8, 64, 34);
+    [closeBtn setTitle:DOLocalizedText(@"Done", @"Готово") forState:UIControlStateNormal];
+    closeBtn.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    [closeBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    closeBtn.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.18];
+    closeBtn.layer.cornerRadius = 12;
+    [closeBtn addTarget:self action:@selector(closePressed) forControlEvents:UIControlEventTouchUpInside];
+    [topBar addSubview:closeBtn];
+    [self.view addSubview:topBar];
+
+    // Clock Preview Area (Mock Lock Screen)
+    self.clockContainer = [[UIView alloc] initWithFrame:CGRectMake(20, 114, screenW - 40, 260)];
+    self.clockContainer.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.06];
+    self.clockContainer.layer.cornerRadius = 24;
+    self.clockContainer.layer.borderWidth = 1.0;
+    self.clockContainer.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.12].CGColor;
+    self.clockContainer.clipsToBounds = YES;
+    [self.view addSubview:self.clockContainer];
+
+    // Date Label
+    self.dateLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 24, self.clockContainer.bounds.size.width - 20, 24)];
+    self.dateLabel.textAlignment = NSTextAlignmentCenter;
+    self.dateLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    self.dateLabel.textColor = [UIColor colorWithWhite:0.9 alpha:0.9];
+    [self.clockContainer addSubview:self.dateLabel];
+
+    // Standard / AIM Pro Time Label
+    self.standardTimeLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 60, self.clockContainer.bounds.size.width - 20, 100)];
+    self.standardTimeLabel.textAlignment = NSTextAlignmentCenter;
+    self.standardTimeLabel.font = [UIFont systemFontOfSize:82 weight:UIFontWeightBold];
+    self.standardTimeLabel.textColor = [UIColor whiteColor];
+    [self.clockContainer addSubview:self.standardTimeLabel];
+
+    // AniTime Stack View
+    self.anitimeStackView = [[UIStackView alloc] initWithFrame:CGRectMake(10, 60, self.clockContainer.bounds.size.width - 20, 150)];
+    self.anitimeStackView.axis = UILayoutConstraintAxisHorizontal;
+    self.anitimeStackView.alignment = UIStackViewAlignmentCenter;
+    self.anitimeStackView.distribution = UIStackViewDistributionEqualCentering;
+    self.anitimeStackView.spacing = 2;
+    [self.clockContainer addSubview:self.anitimeStackView];
+
+    // Subtitle inside clock box
+    UILabel *lockSubtitle = [[UILabel alloc] initWithFrame:CGRectMake(10, 222, self.clockContainer.bounds.size.width - 20, 22)];
+    lockSubtitle.textAlignment = NSTextAlignmentCenter;
+    lockSubtitle.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    lockSubtitle.textColor = [UIColor colorWithWhite:0.6 alpha:1.0];
+    lockSubtitle.text = DOLocalizedText(@"Live Lock Screen Simulation", @"Симуляция экрана блокировки");
+    [self.clockContainer addSubview:lockSubtitle];
+
+    // Controls Card (ScrollView / Stack)
+    UIScrollView *controlsScroll = [[UIScrollView alloc] initWithFrame:CGRectMake(16, 388, screenW - 32, self.view.bounds.size.height - 398)];
+    controlsScroll.showsVerticalScrollIndicator = NO;
+    [self.view addSubview:controlsScroll];
+
+    CGFloat ctrlY = 0;
+    CGFloat ctrlW = screenW - 32;
+
+    // Toggle AniTime
+    UIView *toggleRow = [[UIView alloc] initWithFrame:CGRectMake(0, ctrlY, ctrlW, 44)];
+    UILabel *toggleLbl = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, ctrlW - 70, 44)];
+    toggleLbl.text = DOLocalizedText(@"AniTime Mode (Anime Characters)", @"Режим AniTime (Аниме фигурки)");
+    toggleLbl.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
+    toggleLbl.textColor = [UIColor whiteColor];
+    [toggleRow addSubview:toggleLbl];
+
+    self.anitimeSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(ctrlW - 55, 7, 50, 30)];
+    self.anitimeSwitch.on = [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"dopamine_anitime_enabled" fallback:YES];
+    [self.anitimeSwitch addTarget:self action:@selector(anitimeSwitchToggled:) forControlEvents:UIControlEventValueChanged];
+    [toggleRow addSubview:self.anitimeSwitch];
+    [controlsScroll addSubview:toggleRow];
+    ctrlY += 52;
+
+    // AniTime Style Segment
+    UILabel *styleLbl = [[UILabel alloc] initWithFrame:CGRectMake(0, ctrlY, ctrlW, 22)];
+    styleLbl.text = DOLocalizedText(@"AniTime Character Style:", @"Стиль аниме персонажей:");
+    styleLbl.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
+    styleLbl.textColor = [UIColor colorWithWhite:0.75 alpha:1.0];
+    [controlsScroll addSubview:styleLbl];
+    ctrlY += 26;
+
+    NSArray *styleItems = @[@"m-static", @"s-static", @"s-animated"];
+    self.styleSegment = [[UISegmentedControl alloc] initWithItems:styleItems];
+    self.styleSegment.frame = CGRectMake(0, ctrlY, ctrlW, 34);
+    NSString *currStyle = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_anitime_style"] ?: @"m-static";
+    NSInteger styleIdx = [styleItems indexOfObject:currStyle];
+    self.styleSegment.selectedSegmentIndex = (styleIdx != NSNotFound) ? styleIdx : 0;
+    [self.styleSegment addTarget:self action:@selector(styleChanged:) forControlEvents:UIControlEventValueChanged];
+    [controlsScroll addSubview:self.styleSegment];
+    ctrlY += 46;
+
+    // AIM Pro Font Segment
+    UILabel *fontLbl = [[UILabel alloc] initWithFrame:CGRectMake(0, ctrlY, ctrlW, 22)];
+    fontLbl.text = DOLocalizedText(@"AIM Pro Clock Font:", @"Шрифт часов AIM Pro:");
+    fontLbl.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
+    fontLbl.textColor = [UIColor colorWithWhite:0.75 alpha:1.0];
+    [controlsScroll addSubview:fontLbl];
+    ctrlY += 26;
+
+    NSArray *fontItems = @[@"rounded", @"stencil", @"serif", @"mono", @"heavy"];
+    self.fontSegment = [[UISegmentedControl alloc] initWithItems:fontItems];
+    self.fontSegment.frame = CGRectMake(0, ctrlY, ctrlW, 34);
+    NSString *currFont = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_aim_font"] ?: @"rounded";
+    NSInteger fontIdx = [fontItems indexOfObject:currFont];
+    self.fontSegment.selectedSegmentIndex = (fontIdx != NSNotFound) ? fontIdx : 0;
+    [self.fontSegment addTarget:self action:@selector(fontChanged:) forControlEvents:UIControlEventValueChanged];
+    [controlsScroll addSubview:self.fontSegment];
+    ctrlY += 46;
+
+    // AIM Pro Color Segment
+    UILabel *colorLbl = [[UILabel alloc] initWithFrame:CGRectMake(0, ctrlY, ctrlW, 22)];
+    colorLbl.text = DOLocalizedText(@"AIM Pro Clock Color:", @"Цвет часов AIM Pro:");
+    colorLbl.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
+    colorLbl.textColor = [UIColor colorWithWhite:0.75 alpha:1.0];
+    [controlsScroll addSubview:colorLbl];
+    ctrlY += 26;
+
+    NSArray *colorItems = @[@"white", @"sakura", @"cyan", @"sunset", @"gold"];
+    self.colorSegment = [[UISegmentedControl alloc] initWithItems:colorItems];
+    self.colorSegment.frame = CGRectMake(0, ctrlY, ctrlW, 34);
+    NSString *currColor = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_aim_color"] ?: @"white";
+    NSInteger colorIdx = [colorItems indexOfObject:currColor];
+    self.colorSegment.selectedSegmentIndex = (colorIdx != NSNotFound) ? colorIdx : 0;
+    [self.colorSegment addTarget:self action:@selector(colorChanged:) forControlEvents:UIControlEventValueChanged];
+    [controlsScroll addSubview:self.colorSegment];
+    ctrlY += 56;
+
+    controlsScroll.contentSize = CGSizeMake(ctrlW, ctrlY + 30);
+
+    [self updateClockDisplay];
+    self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(updateClockDisplay) userInfo:nil repeats:YES];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [self.updateTimer invalidate];
+    self.updateTimer = nil;
+}
+
+- (void)closePressed {
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)anitimeSwitchToggled:(UISwitch *)sender {
+    [[DOPreferenceManager sharedManager] setPreferenceValue:@(sender.isOn) forKey:@"dopamine_anitime_enabled"];
+    [self updateClockDisplay];
+}
+
+- (void)styleChanged:(UISegmentedControl *)sender {
+    NSArray *styleItems = @[@"m-static", @"s-static", @"s-animated"];
+    NSString *val = styleItems[sender.selectedSegmentIndex];
+    [[DOPreferenceManager sharedManager] setPreferenceValue:val forKey:@"dopamine_anitime_style"];
+    [self updateClockDisplay];
+}
+
+- (void)fontChanged:(UISegmentedControl *)sender {
+    NSArray *fontItems = @[@"rounded", @"stencil", @"serif", @"mono", @"heavy"];
+    NSString *val = fontItems[sender.selectedSegmentIndex];
+    [[DOPreferenceManager sharedManager] setPreferenceValue:val forKey:@"dopamine_aim_font"];
+    [self updateClockDisplay];
+}
+
+- (void)colorChanged:(UISegmentedControl *)sender {
+    NSArray *colorItems = @[@"white", @"sakura", @"cyan", @"sunset", @"gold"];
+    NSString *val = colorItems[sender.selectedSegmentIndex];
+    [[DOPreferenceManager sharedManager] setPreferenceValue:val forKey:@"dopamine_aim_color"];
+    [self updateClockDisplay];
+}
+
+- (UIFont *)selectedAIMFontWithSize:(CGFloat)size {
+    NSString *currFont = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_aim_font"] ?: @"rounded";
+    if ([currFont isEqualToString:@"rounded"]) {
+        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignRounded];
+        return desc ? [UIFont fontWithDescriptor:desc size:size] : [UIFont systemFontOfSize:size weight:UIFontWeightBold];
+    } else if ([currFont isEqualToString:@"serif"]) {
+        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignSerif];
+        return desc ? [UIFont fontWithDescriptor:desc size:size] : [UIFont systemFontOfSize:size weight:UIFontWeightBold];
+    } else if ([currFont isEqualToString:@"mono"]) {
+        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignMonospaced];
+        return desc ? [UIFont fontWithDescriptor:desc size:size] : [UIFont monospacedDigitSystemFontOfSize:size weight:UIFontWeightBold];
+    } else if ([currFont isEqualToString:@"stencil"]) {
+        return [UIFont fontWithName:@"Impact" size:size] ?: [UIFont systemFontOfSize:size weight:UIFontWeightHeavy];
+    } else {
+        return [UIFont systemFontOfSize:size weight:UIFontWeightHeavy];
+    }
+}
+
+- (UIColor *)selectedAIMColor {
+    NSString *currColor = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_aim_color"] ?: @"white";
+    if ([currColor isEqualToString:@"sakura"]) {
+        return [UIColor colorWithRed:1.0 green:0.62 blue:0.78 alpha:1.0];
+    } else if ([currColor isEqualToString:@"cyan"]) {
+        return [UIColor colorWithRed:0.25 green:0.88 blue:1.0 alpha:1.0];
+    } else if ([currColor isEqualToString:@"sunset"]) {
+        return [UIColor colorWithRed:1.0 green:0.48 blue:0.25 alpha:1.0];
+    } else if ([currColor isEqualToString:@"gold"]) {
+        return [UIColor colorWithRed:1.0 green:0.84 blue:0.0 alpha:1.0];
+    }
+    return [UIColor whiteColor];
+}
+
+- (UIImage *)anitimeImageForCharacter:(NSString *)ch style:(NSString *)style {
+    NSString *resBundlePath = [[NSBundle mainBundle] pathForResource:@"AniTime" ofType:nil];
+    if (!resBundlePath) {
+        resBundlePath = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"AniTime"];
+    }
+    NSString *styleDir = [resBundlePath stringByAppendingPathComponent:style];
+    NSString *filename = [ch isEqualToString:@":"] ? @"colon.png" : [NSString stringWithFormat:@"%@.png", ch];
+    NSString *imgPath = [styleDir stringByAppendingPathComponent:filename];
+    return [UIImage imageWithContentsOfFile:imgPath];
+}
+
+- (void)updateClockDisplay {
+    NSDate *now = [NSDate date];
+    NSDateFormatter *df = [NSDateFormatter new];
+    df.locale = [NSLocale currentLocale];
+    df.dateFormat = @"EEEE, d MMMM";
+    self.dateLabel.text = [df stringFromDate:now];
+
+    df.dateFormat = @"HH:mm";
+    NSString *timeStr = [df stringFromDate:now];
+
+    BOOL anitimeEnabled = self.anitimeSwitch.isOn;
+    NSString *currStyle = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_anitime_style"] ?: @"m-static";
+
+    if (anitimeEnabled) {
+        self.standardTimeLabel.hidden = YES;
+        self.anitimeStackView.hidden = NO;
+        for (UIView *sub in self.anitimeStackView.arrangedSubviews) {
+            [self.anitimeStackView removeArrangedSubview:sub];
+            [sub removeFromSuperview];
+        }
+
+        CGFloat digitH = 120.0;
+        for (NSUInteger i = 0; i < timeStr.length; i++) {
+            NSString *ch = [timeStr substringWithRange:NSMakeRange(i, 1)];
+            UIImage *img = [self anitimeImageForCharacter:ch style:currStyle];
+            if (img) {
+                UIImageView *iv = [[UIImageView alloc] initWithImage:img];
+                iv.contentMode = UIViewContentModeScaleAspectFit;
+                CGFloat w = (img.size.height > 0) ? (img.size.width / img.size.height * digitH) : 55.0;
+                [iv.widthAnchor constraintEqualToConstant:w].active = YES;
+                [iv.heightAnchor constraintEqualToConstant:digitH].active = YES;
+                [self.anitimeStackView addArrangedSubview:iv];
+            } else {
+                UILabel *lbl = [UILabel new];
+                lbl.text = ch;
+                lbl.font = [self selectedAIMFontWithSize:70];
+                lbl.textColor = [self selectedAIMColor];
+                lbl.textAlignment = NSTextAlignmentCenter;
+                [self.anitimeStackView addArrangedSubview:lbl];
+            }
+        }
+    } else {
+        self.anitimeStackView.hidden = YES;
+        self.standardTimeLabel.hidden = NO;
+        self.standardTimeLabel.text = timeStr;
+        self.standardTimeLabel.font = [self selectedAIMFontWithSize:82];
+        self.standardTimeLabel.textColor = [self selectedAIMColor];
+    }
+}
+
+@end
+
 @interface DOSettingsController ()
 
 @end
@@ -946,6 +1246,50 @@
             [pageFxSpecifier setProperty:@"dopamine_page_scroll_fx" forKey:@"key"];
             [pageFxSpecifier setProperty:@"default" forKey:@"default"];
             [specifiers addObject:pageFxSpecifier];
+
+            // 2.5 AniTime & AIM Pro Lock Screen Clock
+            PSSpecifier *dopamineLockScreenGroup = [PSSpecifier emptyGroupSpecifier];
+            dopamineLockScreenGroup.name = DOLocalizedText(@"Dopamine - AniTime & AIM Pro Clock", @"Dopamine - AniTime и AIM Pro часы");
+            [specifiers addObject:dopamineLockScreenGroup];
+
+            PSSpecifier *anitimeToggleSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"AniTime (Anime Clock)", @"AniTime (Аниме фигурки часов)") target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [anitimeToggleSpecifier setProperty:@YES forKey:@"enabled"];
+            [anitimeToggleSpecifier setProperty:@"dopamine_anitime_enabled" forKey:@"key"];
+            [anitimeToggleSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:anitimeToggleSpecifier];
+
+            PSSpecifier *anitimePreviewSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"Preview AniTime & AIM Pro Clock", @"Предпросмотр AniTime и AIM Pro") target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+            anitimePreviewSpecifier.buttonAction = @selector(previewAniTimePressed);
+            [anitimePreviewSpecifier setProperty:@YES forKey:@"enabled"];
+            [anitimePreviewSpecifier setProperty:@"previewAniTimeBtn" forKey:@"key"];
+            [specifiers addObject:anitimePreviewSpecifier];
+
+            PSSpecifier *anitimeStyleSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"AniTime Character Style", @"Стиль аниме персонажей") target:self set:@selector(setDopamineValue:specifier:) get:@selector(readDopamineValue:) detail:[DOPSListItemsController class] cell:PSLinkListCell edit:nil];
+            [anitimeStyleSpecifier setProperty:@"anitimeStyleIdentifiers" forKey:@"valuesDataSource"];
+            [anitimeStyleSpecifier setProperty:@"anitimeStyleNames" forKey:@"titlesDataSource"];
+            [anitimeStyleSpecifier setProperty:@"dopamine_anitime_style" forKey:@"key"];
+            [anitimeStyleSpecifier setProperty:@"m-static" forKey:@"default"];
+            [specifiers addObject:anitimeStyleSpecifier];
+
+            PSSpecifier *aimProToggleSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"AIM Pro (Custom Lock Clock)", @"AIM Pro (Кастомизация часов)") target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [aimProToggleSpecifier setProperty:@YES forKey:@"enabled"];
+            [aimProToggleSpecifier setProperty:@"dopamine_aim_pro_enabled" forKey:@"key"];
+            [aimProToggleSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:aimProToggleSpecifier];
+
+            PSSpecifier *aimFontSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"AIM Pro Clock Font", @"Шрифт часов AIM Pro") target:self set:@selector(setDopamineValue:specifier:) get:@selector(readDopamineValue:) detail:[DOPSListItemsController class] cell:PSLinkListCell edit:nil];
+            [aimFontSpecifier setProperty:@"aimFontIdentifiers" forKey:@"valuesDataSource"];
+            [aimFontSpecifier setProperty:@"aimFontNames" forKey:@"titlesDataSource"];
+            [aimFontSpecifier setProperty:@"dopamine_aim_font" forKey:@"key"];
+            [aimFontSpecifier setProperty:@"rounded" forKey:@"default"];
+            [specifiers addObject:aimFontSpecifier];
+
+            PSSpecifier *aimColorSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"AIM Pro Clock Color", @"Цвет часов AIM Pro") target:self set:@selector(setDopamineValue:specifier:) get:@selector(readDopamineValue:) detail:[DOPSListItemsController class] cell:PSLinkListCell edit:nil];
+            [aimColorSpecifier setProperty:@"aimColorIdentifiers" forKey:@"valuesDataSource"];
+            [aimColorSpecifier setProperty:@"aimColorNames" forKey:@"titlesDataSource"];
+            [aimColorSpecifier setProperty:@"dopamine_aim_color" forKey:@"key"];
+            [aimColorSpecifier setProperty:@"white" forKey:@"default"];
+            [specifiers addObject:aimColorSpecifier];
 
             PSSpecifier *footnoteSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"Lock Screen Footnote Text", @"Текст внизу экрана блокировки") target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
             footnoteSpecifier.buttonAction = @selector(setLockscreenFootnotePressed);
@@ -1716,6 +2060,52 @@
     ];
 }
 
+- (NSArray *)anitimeStyleIdentifiers {
+    return @[@"m-static", @"s-static", @"s-animated"];
+}
+
+- (NSArray *)anitimeStyleNames {
+    return @[
+        DOLocalizedText(@"Medium Waifu (m-static)", @"Аниме фигурки (m-static)"),
+        DOLocalizedText(@"Chibi Static (s-static)", @"Чиби фигурки (s-static)"),
+        DOLocalizedText(@"Chibi Animated (s-animated)", @"Чиби анимация (s-animated)")
+    ];
+}
+
+- (NSArray *)aimFontIdentifiers {
+    return @[@"rounded", @"stencil", @"serif", @"mono", @"heavy"];
+}
+
+- (NSArray *)aimFontNames {
+    return @[
+        DOLocalizedText(@"Rounded Bold", @"Скругленный жирный"),
+        DOLocalizedText(@"Stencil / Impact", @"Трафарет / Impact"),
+        DOLocalizedText(@"Classic Serif", @"Классический с засечками"),
+        DOLocalizedText(@"Monospace Digital", @"Моноширинный цифровой"),
+        DOLocalizedText(@"Ultra Heavy", @"Сверхжирный Heavy")
+    ];
+}
+
+- (NSArray *)aimColorIdentifiers {
+    return @[@"white", @"sakura", @"cyan", @"sunset", @"gold"];
+}
+
+- (NSArray *)aimColorNames {
+    return @[
+        DOLocalizedText(@"Classic White", @"Классический белый"),
+        DOLocalizedText(@"Sakura Pink", @"Сакура розовый"),
+        DOLocalizedText(@"Neon Cyan", @"Неоновый бирюзовый"),
+        DOLocalizedText(@"Sunset Coral", @"Закатный коралловый"),
+        DOLocalizedText(@"Cyber Gold", @"Золотой")
+    ];
+}
+
+- (void)previewAniTimePressed {
+    DOAniTimePreviewViewController *previewVC = [DOAniTimePreviewViewController new];
+    previewVC.modalPresentationStyle = UIModalPresentationFullScreen;
+    [self presentViewController:previewVC animated:YES completion:nil];
+}
+
 #pragma mark - Language & Tweak Management
 
 - (NSArray *)languageIdentifiers
@@ -1766,7 +2156,9 @@
             @"dopamine_lockscreen_footnote", @"dopamine_custom_carrier", @"dopamine_custom_time",
             @"dopamine_numeric_signal", @"dopamine_override_battery", @"dopamine_custom_res_w", @"dopamine_custom_res_h",
             @"dopamine_icon_gravity", @"dopamine_apple_internal",
-            @"dopamine_icon_shape", @"dopamine_anim_speed", @"dopamine_page_scroll_fx"
+            @"dopamine_icon_shape", @"dopamine_anim_speed", @"dopamine_page_scroll_fx",
+            @"dopamine_anitime_enabled", @"dopamine_anitime_style",
+            @"dopamine_aim_pro_enabled", @"dopamine_aim_font", @"dopamine_aim_color"
         ];
         for (NSString *key in keysToReset) {
             [prefs setPreferenceValue:nil forKey:key];
@@ -2427,6 +2819,11 @@
         doPrefDict[@"dopamine_icon_shape"] = [prefs preferenceValueForKey:@"dopamine_icon_shape"] ?: @"default";
         doPrefDict[@"dopamine_anim_speed"] = [prefs preferenceValueForKey:@"dopamine_anim_speed"] ?: @"1.0";
         doPrefDict[@"dopamine_page_scroll_fx"] = [prefs preferenceValueForKey:@"dopamine_page_scroll_fx"] ?: @"default";
+        doPrefDict[@"dopamine_anitime_enabled"] = @([prefs boolPreferenceValueForKey:@"dopamine_anitime_enabled" fallback:NO]);
+        doPrefDict[@"dopamine_anitime_style"] = [prefs preferenceValueForKey:@"dopamine_anitime_style"] ?: @"m-static";
+        doPrefDict[@"dopamine_aim_pro_enabled"] = @([prefs boolPreferenceValueForKey:@"dopamine_aim_pro_enabled" fallback:NO]);
+        doPrefDict[@"dopamine_aim_font"] = [prefs preferenceValueForKey:@"dopamine_aim_font"] ?: @"rounded";
+        doPrefDict[@"dopamine_aim_color"] = [prefs preferenceValueForKey:@"dopamine_aim_color"] ?: @"white";
         [doPrefDict writeToFile:doPrefPath atomically:YES];
 
         // 13. Custom Resolution
