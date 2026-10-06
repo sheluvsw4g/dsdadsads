@@ -329,7 +329,11 @@ extern char **environ;
 {
     NSString *ver = (__bridge_transfer NSString *)MGCopyAnswer((__bridge CFStringRef)@"ProductVersion");
     if (ver && ver.length) return ver;
-    return [[UIDevice currentDevice] systemVersion];
+    NSOperatingSystemVersion os = [[NSProcessInfo processInfo] operatingSystemVersion];
+    if (os.patchVersion > 0) {
+        return [NSString stringWithFormat:@"%ld.%ld.%ld", (long)os.majorVersion, (long)os.minorVersion, (long)os.patchVersion];
+    }
+    return [NSString stringWithFormat:@"%ld.%ld", (long)os.majorVersion, (long)os.minorVersion];
 }
 
 - (BOOL)isBootstrapped
@@ -846,7 +850,7 @@ extern char **environ;
 
 - (NSError *)deleteBootstrap
 {
-    [self setJailbroken:NO withVersion:nil];
+    [self setJailbroken:NO withVersion:@""];
     if (![self isJailbroken] && getuid() != 0) {
         int r = [self runTrollStoreAction:@"delete-bootstrap"];
         if (r != 0) {
