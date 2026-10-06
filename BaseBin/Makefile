@@ -29,9 +29,14 @@ MachOMerger: .build .include
 	@cp MachOMerger/MachOMerger .build
 
 opainject: .build .include
-	$(MAKE) -C opainject FINALPACKAGE=1
-	@ldid -Cadhoc -s opainject/.theos/obj/opainject
-	@cp opainject/.theos/obj/opainject .build
+	$(MAKE) -C opainject
+	@if [ -f opainject/.theos/obj/opainject ]; then \
+		ldid -Cadhoc -s opainject/.theos/obj/opainject; \
+		cp opainject/.theos/obj/opainject .build; \
+	elif [ -f opainject/opainject ]; then \
+		ldid -Cadhoc -s opainject/opainject; \
+		cp opainject/opainject .build; \
+	fi
 
 libjailbreak: .build .include ChOma
 	$(MAKE) -C libjailbreak
@@ -105,6 +110,7 @@ dyldhook: basebin.tc
 
 basebin.tar: basebin.tc dyldhook
 	@find ./.build -name ".DS_Store" -delete
+	@chmod +x ./tar
 	@DYLD_FALLBACK_LIBRARY_PATH="." ./tar --transform "s/^.build/basebin/" -cvf "basebin.tar" ".build" --owner=0 --group=0
 
 clean:
