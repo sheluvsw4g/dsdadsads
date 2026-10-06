@@ -390,96 +390,98 @@
             }
         }
 
-        // --- Nugget Tweaks (Built right into Dopamine) ---
-        PSSpecifier *nuggetGroupSpecifier = [PSSpecifier emptyGroupSpecifier];
-        nuggetGroupSpecifier.name = @"Nugget - Custom Wallpapers & PosterBoard";
-        [specifiers addObject:nuggetGroupSpecifier];
+        // --- Dopamine System Tweaks & Customizations (Available after Jailbreak) ---
+        if (envManager.isJailbroken) {
+            PSSpecifier *dopamineWallpaperGroup = [PSSpecifier emptyGroupSpecifier];
+            dopamineWallpaperGroup.name = @"Dopamine - Custom Wallpapers & PosterBoard";
+            [specifiers addObject:dopamineWallpaperGroup];
 
-        PSSpecifier *liveWallpaperSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Animated / Live Video Wallpaper" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
-        liveWallpaperSpecifier.buttonAction = @selector(selectLiveVideoWallpaperPressed);
-        [liveWallpaperSpecifier setProperty:@YES forKey:@"enabled"];
-        [liveWallpaperSpecifier setProperty:@"liveWallpaperBtn" forKey:@"key"];
-        [specifiers addObject:liveWallpaperSpecifier];
+            PSSpecifier *liveWallpaperSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Animated / Live Video Wallpaper" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+            liveWallpaperSpecifier.buttonAction = @selector(selectLiveVideoWallpaperPressed);
+            [liveWallpaperSpecifier setProperty:@YES forKey:@"enabled"];
+            [liveWallpaperSpecifier setProperty:@"liveWallpaperBtn" forKey:@"key"];
+            [specifiers addObject:liveWallpaperSpecifier];
 
-        PSSpecifier *resetPosterboardSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset Wallpapers & PosterBoard" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
-        resetPosterboardSpecifier.buttonAction = @selector(resetPosterboardPressed);
-        [resetPosterboardSpecifier setProperty:@YES forKey:@"enabled"];
-        [resetPosterboardSpecifier setProperty:@"resetPosterboardBtn" forKey:@"key"];
-        [specifiers addObject:resetPosterboardSpecifier];
+            PSSpecifier *resetPosterboardSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset Wallpapers & PosterBoard" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+            resetPosterboardSpecifier.buttonAction = @selector(resetPosterboardPressed);
+            [resetPosterboardSpecifier setProperty:@YES forKey:@"enabled"];
+            [resetPosterboardSpecifier setProperty:@"resetPosterboardBtn" forKey:@"key"];
+            [specifiers addObject:resetPosterboardSpecifier];
 
-        PSSpecifier *nuggetGestaltGroup = [PSSpecifier emptyGroupSpecifier];
-        nuggetGestaltGroup.name = @"Nugget - Dynamic Island & Gestalt";
-        [specifiers addObject:nuggetGestaltGroup];
+            PSSpecifier *dopamineGestaltGroup = [PSSpecifier emptyGroupSpecifier];
+            dopamineGestaltGroup.name = @"Dopamine - Dynamic Island & Hardware";
+            [specifiers addObject:dopamineGestaltGroup];
 
-        PSSpecifier *dynamicIslandSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Dynamic Island" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [dynamicIslandSpecifier setProperty:@YES forKey:@"enabled"];
-        [dynamicIslandSpecifier setProperty:@"nugget_dynamic_island" forKey:@"key"];
-        [dynamicIslandSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:dynamicIslandSpecifier];
+            PSSpecifier *dynamicIslandSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Dynamic Island" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [dynamicIslandSpecifier setProperty:@YES forKey:@"enabled"];
+            [dynamicIslandSpecifier setProperty:@"dopamine_dynamic_island" forKey:@"key"];
+            [dynamicIslandSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:dynamicIslandSpecifier];
 
-        PSSpecifier *stageManagerSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Stage Manager UI" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [stageManagerSpecifier setProperty:@YES forKey:@"enabled"];
-        [stageManagerSpecifier setProperty:@"nugget_stage_manager" forKey:@"key"];
-        [stageManagerSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:stageManagerSpecifier];
+            PSSpecifier *stageManagerSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Stage Manager UI" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [stageManagerSpecifier setProperty:@YES forKey:@"enabled"];
+            [stageManagerSpecifier setProperty:@"dopamine_stage_manager" forKey:@"key"];
+            [stageManagerSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:stageManagerSpecifier];
 
-        PSSpecifier *aodSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Always-On Display (AOD)" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [aodSpecifier setProperty:@YES forKey:@"enabled"];
-        [aodSpecifier setProperty:@"nugget_always_on_display" forKey:@"key"];
-        [aodSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:aodSpecifier];
+            PSSpecifier *aodSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Always-On Display (AOD)" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [aodSpecifier setProperty:@YES forKey:@"enabled"];
+            [aodSpecifier setProperty:@"dopamine_always_on_display" forKey:@"key"];
+            [aodSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:aodSpecifier];
 
-        PSSpecifier *bootChimeSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Mac Boot Chime on Power" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [bootChimeSpecifier setProperty:@YES forKey:@"enabled"];
-        [bootChimeSpecifier setProperty:@"nugget_boot_chime" forKey:@"key"];
-        [bootChimeSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:bootChimeSpecifier];
+            PSSpecifier *bootChimeSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Mac Boot Chime on Power" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [bootChimeSpecifier setProperty:@YES forKey:@"enabled"];
+            [bootChimeSpecifier setProperty:@"dopamine_boot_chime" forKey:@"key"];
+            [bootChimeSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:bootChimeSpecifier];
 
-        PSSpecifier *chargeLimitSpecifier = [PSSpecifier preferenceSpecifierNamed:@"80% Charge Limit Option" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [chargeLimitSpecifier setProperty:@YES forKey:@"enabled"];
-        [chargeLimitSpecifier setProperty:@"nugget_charge_limit" forKey:@"key"];
-        [chargeLimitSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:chargeLimitSpecifier];
+            PSSpecifier *chargeLimitSpecifier = [PSSpecifier preferenceSpecifierNamed:@"80% Charge Limit Option" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [chargeLimitSpecifier setProperty:@YES forKey:@"enabled"];
+            [chargeLimitSpecifier setProperty:@"dopamine_charge_limit" forKey:@"key"];
+            [chargeLimitSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:chargeLimitSpecifier];
 
-        PSSpecifier *nuggetSpringboardGroup = [PSSpecifier emptyGroupSpecifier];
-        nuggetSpringboardGroup.name = @"Nugget - SpringBoard & System";
-        [specifiers addObject:nuggetSpringboardGroup];
+            PSSpecifier *dopamineSpringboardGroup = [PSSpecifier emptyGroupSpecifier];
+            dopamineSpringboardGroup.name = @"Dopamine - SpringBoard & System";
+            [specifiers addObject:dopamineSpringboardGroup];
 
-        PSSpecifier *footnoteSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Lock Screen Footnote Text" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
-        footnoteSpecifier.buttonAction = @selector(setLockscreenFootnotePressed);
-        [footnoteSpecifier setProperty:@YES forKey:@"enabled"];
-        [footnoteSpecifier setProperty:@"footnoteBtn" forKey:@"key"];
-        [specifiers addObject:footnoteSpecifier];
+            PSSpecifier *footnoteSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Lock Screen Footnote Text" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+            footnoteSpecifier.buttonAction = @selector(setLockscreenFootnotePressed);
+            [footnoteSpecifier setProperty:@YES forKey:@"enabled"];
+            [footnoteSpecifier setProperty:@"footnoteBtn" forKey:@"key"];
+            [specifiers addObject:footnoteSpecifier];
 
-        PSSpecifier *hideDIInScreenshotsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Show Dynamic Island in Screenshots" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [hideDIInScreenshotsSpecifier setProperty:@YES forKey:@"enabled"];
-        [hideDIInScreenshotsSpecifier setProperty:@"nugget_di_in_screenshots" forKey:@"key"];
-        [hideDIInScreenshotsSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:hideDIInScreenshotsSpecifier];
+            PSSpecifier *hideDIInScreenshotsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Show Dynamic Island in Screenshots" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [hideDIInScreenshotsSpecifier setProperty:@YES forKey:@"enabled"];
+            [hideDIInScreenshotsSpecifier setProperty:@"dopamine_di_in_screenshots" forKey:@"key"];
+            [hideDIInScreenshotsSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:hideDIInScreenshotsSpecifier];
 
-        PSSpecifier *disableLowPowerAlertsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Disable Low Power 20% Alert" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [disableLowPowerAlertsSpecifier setProperty:@YES forKey:@"enabled"];
-        [disableLowPowerAlertsSpecifier setProperty:@"nugget_disable_lpm_alert" forKey:@"key"];
-        [disableLowPowerAlertsSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:disableLowPowerAlertsSpecifier];
+            PSSpecifier *disableLowPowerAlertsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Disable Low Power 20% Alert" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [disableLowPowerAlertsSpecifier setProperty:@YES forKey:@"enabled"];
+            [disableLowPowerAlertsSpecifier setProperty:@"dopamine_disable_lpm_alert" forKey:@"key"];
+            [disableLowPowerAlertsSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:disableLowPowerAlertsSpecifier];
 
-        PSSpecifier *disableAirDropLimitSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Disable 10-Min AirDrop Limit" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [disableAirDropLimitSpecifier setProperty:@YES forKey:@"enabled"];
-        [disableAirDropLimitSpecifier setProperty:@"nugget_airdrop_limit" forKey:@"key"];
-        [disableAirDropLimitSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:disableAirDropLimitSpecifier];
+            PSSpecifier *disableAirDropLimitSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Disable 10-Min AirDrop Limit" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [disableAirDropLimitSpecifier setProperty:@YES forKey:@"enabled"];
+            [disableAirDropLimitSpecifier setProperty:@"dopamine_airdrop_limit" forKey:@"key"];
+            [disableAirDropLimitSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:disableAirDropLimitSpecifier];
 
-        PSSpecifier *clockAnimSpecifier = [PSSpecifier preferenceSpecifierNamed:@"SwiftUI Clock Flip Animation" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
-        [clockAnimSpecifier setProperty:@YES forKey:@"enabled"];
-        [clockAnimSpecifier setProperty:@"nugget_clock_animation" forKey:@"key"];
-        [clockAnimSpecifier setProperty:@NO forKey:@"default"];
-        [specifiers addObject:clockAnimSpecifier];
+            PSSpecifier *clockAnimSpecifier = [PSSpecifier preferenceSpecifierNamed:@"SwiftUI Clock Flip Animation" target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
+            [clockAnimSpecifier setProperty:@YES forKey:@"enabled"];
+            [clockAnimSpecifier setProperty:@"dopamine_clock_animation" forKey:@"key"];
+            [clockAnimSpecifier setProperty:@NO forKey:@"default"];
+            [specifiers addObject:clockAnimSpecifier];
 
-        PSSpecifier *applyNuggetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Apply Changes & Respring" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
-        applyNuggetSpecifier.buttonAction = @selector(applyNuggetChangesPressed);
-        [applyNuggetSpecifier setProperty:@YES forKey:@"enabled"];
-        [applyNuggetSpecifier setProperty:@"applyNuggetBtn" forKey:@"key"];
-        [specifiers addObject:applyNuggetSpecifier];
+            PSSpecifier *applyDopamineSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Apply Changes & Respring" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+            applyDopamineSpecifier.buttonAction = @selector(applyDopamineChangesPressed);
+            [applyDopamineSpecifier setProperty:@YES forKey:@"enabled"];
+            [applyDopamineSpecifier setProperty:@"applyDopamineBtn" forKey:@"key"];
+            [specifiers addObject:applyDopamineSpecifier];
+        }
 
         _specifiers = specifiers;
     }
@@ -841,15 +843,15 @@
     [self reloadSpecifiers];
 }
 
-#pragma mark - Nugget Integration Actions
+#pragma mark - Dopamine Customization Actions
 
-- (id)readNuggetToggle:(PSSpecifier *)specifier
+- (id)readDopamineToggle:(PSSpecifier *)specifier
 {
     NSString *key = [specifier propertyForKey:@"key"];
     return [[DOPreferenceManager sharedManager] preferenceValueForKey:key] ?: [specifier propertyForKey:@"default"];
 }
 
-- (void)setNuggetToggle:(id)value specifier:(PSSpecifier *)specifier
+- (void)setDopamineToggle:(id)value specifier:(PSSpecifier *)specifier
 {
     NSString *key = [specifier propertyForKey:@"key"];
     [[DOPreferenceManager sharedManager] setPreferenceValue:value forKey:key];
@@ -883,7 +885,7 @@
 
 - (void)resetPosterboardPressed
 {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset Wallpapers & PosterBoard" message:@"This will purge saved corrupted wallpaper caches and reset PosterBoard configurations (just like in Nugget)." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset Wallpapers & PosterBoard" message:@"This will purge saved wallpaper caches and reset PosterBoard configurations." preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"Reset & Respring" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         // Clear caches safely
         NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
@@ -902,7 +904,7 @@
 
 - (void)setLockscreenFootnotePressed
 {
-    NSString *currentFootnote = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"nugget_lockscreen_footnote"] ?: @"";
+    NSString *currentFootnote = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_lockscreen_footnote"] ?: @"";
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Lock Screen Footnote" message:@"Enter custom text to display at the bottom of the lock screen:" preferredStyle:UIAlertControllerStyleAlert];
     [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.placeholder = @"e.g. iPhone of W4G";
@@ -910,7 +912,7 @@
     }];
     [alert addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *newText = alert.textFields.firstObject.text ?: @"";
-        [[DOPreferenceManager sharedManager] setPreferenceValue:newText forKey:@"nugget_lockscreen_footnote"];
+        [[DOPreferenceManager sharedManager] setPreferenceValue:newText forKey:@"dopamine_lockscreen_footnote"];
         UIAlertController *savedAlert = [UIAlertController alertControllerWithTitle:@"Saved" message:@"Lock screen footnote saved! Apply changes to activate." preferredStyle:UIAlertControllerStyleAlert];
         [savedAlert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Close") style:UIAlertActionStyleCancel handler:nil]];
         [self presentViewController:savedAlert animated:YES completion:nil];
@@ -919,14 +921,14 @@
     [self presentViewController:alert animated:YES completion:nil];
 }
 
-- (void)applyNuggetChangesPressed
+- (void)applyDopamineChangesPressed
 {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Apply Nugget Tweaks" message:@"Applying MobileGestalt, SpringBoard flags and PosterBoard modifications directly on device..." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Apply Dopamine Tweaks" message:@"Applying MobileGestalt, SpringBoard flags and PosterBoard modifications directly on device..." preferredStyle:UIAlertControllerStyleAlert];
     [self presentViewController:alert animated:YES completion:nil];
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [alert dismissViewControllerAnimated:YES completion:^{
-            UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Changes Applied! ⚡" message:@"All Nugget tweaks have been applied. Restarting SpringBoard to finalize..." preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Changes Applied! ⚡" message:@"All modifications have been applied. Restarting SpringBoard to finalize..." preferredStyle:UIAlertControllerStyleAlert];
             [self presentViewController:doneAlert animated:YES completion:nil];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 [[DOEnvironmentManager sharedManager] respring];

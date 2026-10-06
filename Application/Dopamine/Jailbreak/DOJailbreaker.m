@@ -659,8 +659,8 @@ void *boomerang_server(struct boomerang_info *info)
 
 - (void)finalize
 {
-    [[DOUIManager sharedInstance] sendLog:DOLocalizedString(@"Rebooting Userspace") debug:NO];
-    [[DOEnvironmentManager sharedManager] rebootUserspace];
+    [[DOUIManager sharedInstance] sendLog:DOLocalizedString(@"Rebooting") debug:NO];
+    [[DOEnvironmentManager sharedManager] reboot];
 }
 
 - (IOSurfaceRef)allocatePurpleGfxMemWithSize:(size_t)size
