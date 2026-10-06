@@ -965,7 +965,7 @@
 
         dispatch_async(dispatch_get_main_queue(), ^{
             [alert dismissViewControllerAnimated:YES completion:^{
-                UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Modifications Applied! ⚡" message:@"Configurations saved directly to device system. Restarting SpringBoard..." preferredStyle:UIAlertControllerStyleAlert];
+                UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Modifications Applied" message:@"Configurations saved directly to device system. Restarting SpringBoard..." preferredStyle:UIAlertControllerStyleAlert];
                 [self presentViewController:doneAlert animated:YES completion:nil];
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                     [[DOEnvironmentManager sharedManager] respring];
