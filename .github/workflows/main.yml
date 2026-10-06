@@ -96,7 +96,9 @@ jobs:
       - name: Build Custom Sileo
         run: |
           set -x
-          if [ -d "sileo" ]; then
+          if [ -f "Application/Dopamine/Resources/sileo.deb" ]; then
+            echo "sileo.deb already exists, skipping Sileo compilation."
+          elif [ -d "sileo" ]; then
             gmake -C sileo package SILEO_PLATFORM=iphoneos-arm64 || true
             if ls sileo/packages/*.deb 1> /dev/null 2>&1; then
               cp -f sileo/packages/*.deb Application/Dopamine/Resources/sileo.deb

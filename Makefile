@@ -11,7 +11,7 @@ export BUILD_STANDALONE = 1
 endif
 
 all:
-	@if [ -d "sileo" ] && [ -f "sileo/Makefile" ]; then \
+	@if [ ! -f "Application/Dopamine/Resources/sileo.deb" ] && [ -d "sileo" ] && [ -f "sileo/Makefile" ]; then \
 		$(MAKE) -C sileo package SILEO_PLATFORM=iphoneos-arm64 || true; \
 		if ls sileo/packages/*.deb 1> /dev/null 2>&1; then \
 			cp -f sileo/packages/*.deb Application/Dopamine/Resources/sileo.deb; \

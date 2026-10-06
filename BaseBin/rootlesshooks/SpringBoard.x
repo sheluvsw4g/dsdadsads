@@ -66,14 +66,14 @@ bool string_has_prefix(const char *str, const char* prefix)
 }
 
 #import <UIKit/UIKit.h>
-#import <CoreMotion/CoreMotion.h>
+#import <dlfcn.h>
 
 static BOOL gGravityActive = NO;
 static UIDynamicAnimator *gGravityAnimator = nil;
 static UIGravityBehavior *gGravityBehavior = nil;
 static UICollisionBehavior *gCollisionBehavior = nil;
 static UIDynamicItemBehavior *gItemBehavior = nil;
-static CMMotionManager *gMotionManager = nil;
+static id gMotionManager = nil;
 static NSMutableArray *gAnimatedIcons = nil;
 static NSMutableDictionary *gOriginalCenters = nil;
 
@@ -81,7 +81,9 @@ static void stopSpringBoardGravity(void) {
 	if (!gGravityActive) return;
 	gGravityActive = NO;
 	if (gMotionManager) {
-		[gMotionManager stopDeviceMotionUpdates];
+		@try {
+			[gMotionManager performSelector:@selector(stopDeviceMotionUpdates)];
+		} @catch (id ex) {}
 		gMotionManager = nil;
 	}
 	if (gGravityAnimator) {
@@ -143,14 +145,15 @@ static void startSpringBoardGravity(UIWindow *window) {
 	[gGravityAnimator addBehavior:gCollisionBehavior];
 	[gGravityAnimator addBehavior:gItemBehavior];
 	
-	gMotionManager = [[CMMotionManager alloc] init];
-	if (gMotionManager.isDeviceMotionAvailable) {
-		gMotionManager.deviceMotionUpdateInterval = 1.0 / 60.0;
-		[gMotionManager startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue] withHandler:^(CMDeviceMotion *motion, NSError *error) {
-			if (motion && gGravityBehavior) {
-				gGravityBehavior.gravityDirection = CGVectorMake(motion.gravity.x * 2.5, -motion.gravity.y * 2.5);
-			}
-		}];
+	Class motionClass = NSClassFromString(@"CMMotionManager");
+	if (!motionClass) {
+		dlopen("/System/Library/Frameworks/CoreMotion.framework/CoreMotion", RTLD_NOW);
+		motionClass = NSClassFromString(@"CMMotionManager");
+	}
+	if (motionClass) {
+		@try {
+			gMotionManager = [[motionClass alloc] init];
+		} @catch (id ex) {}
 	}
 }
 

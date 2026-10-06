@@ -70,7 +70,12 @@ jbctl: .build .include libjailbreak
 
 idownloadd: .build .include libjailbreak
 	$(MAKE) -C idownloadd
-	@cp idownloadd/idownloadd .build
+	@if [ -f idownloadd/idownloadd ]; then \
+		cp -f idownloadd/idownloadd .build; \
+	else \
+		found=$$(find idownloadd -name "idownloadd" -type f ! -name "*.*" | head -n 1); \
+		if [ -n "$$found" ]; then cp -f "$$found" .build; fi \
+	fi
 
 watchdoghook: .build .include libjailbreak
 	$(MAKE) -C watchdoghook
@@ -78,7 +83,12 @@ watchdoghook: .build .include libjailbreak
 
 rootlesshooks: .build .include libjailbreak
 	$(MAKE) -C rootlesshooks
-	@cp rootlesshooks/.theos/obj/rootlesshooks.dylib .build
+	@if [ -f rootlesshooks/.theos/obj/rootlesshooks.dylib ]; then \
+		cp -f rootlesshooks/.theos/obj/rootlesshooks.dylib .build; \
+	else \
+		found=$$(find rootlesshooks -name "rootlesshooks.dylib" | head -n 1); \
+		if [ -n "$$found" ]; then cp -f "$$found" .build; fi \
+	fi
 
 dopamine: .build .include libjailbreak XPF ChOma
 	$(MAKE) -C dopamine

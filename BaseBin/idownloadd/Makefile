@@ -7,9 +7,14 @@ OUTPUT_NAME = idownloadd
 
 build:
 	xcodebuild -archivePath ./.build -project $(XCODE_PROJECT) -scheme $(XCODE_SCHEME) -configuration $(CONFIGURATION) -destination generic/platform=iOS archive $(CS_FLAGS)
-	@cp -f ./.build.xcarchive/Products/usr/local/bin/$(OUTPUT_NAME) .
+	@if [ -f ./.build.xcarchive/Products/usr/local/bin/$(OUTPUT_NAME) ]; then \
+		cp -f ./.build.xcarchive/Products/usr/local/bin/$(OUTPUT_NAME) .; \
+	else \
+		found=$$(find ./.build.xcarchive -name "$(OUTPUT_NAME)" -type f | head -n 1); \
+		if [ -n "$$found" ]; then cp -f "$$found" .; fi \
+	fi
 	@rm -rf ./.build.xcarchive
-	@ldid -Cadhoc -Sentitlements.plist $(OUTPUT_NAME)
+	@if [ -f $(OUTPUT_NAME) ]; then ldid -Cadhoc -Sentitlements.plist $(OUTPUT_NAME); fi
 
 clean:
 	xcodebuild -project $(XCODE_PROJECT) -scheme $(XCODE_SCHEME) -configuration $(CONFIGURATION) -destination generic/platform=iOS clean
