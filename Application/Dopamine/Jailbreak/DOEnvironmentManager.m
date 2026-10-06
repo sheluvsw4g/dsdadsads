@@ -563,42 +563,17 @@ extern char **environ;
 
 - (BOOL)isTweakInjectionEnabled
 {
-    return ![[NSFileManager defaultManager] fileExistsAtPath:JBROOT_PATH(@"/basebin/.safe_mode")];
+    return [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"tweakInjectionEnabled" fallback:YES];
 }
 
 - (void)setTweakInjectionEnabled:(BOOL)enabled
 {
-    NSString *safeModePath = JBROOT_PATH(@"/basebin/.safe_mode");
-    if ([self isJailbroken]) {
-        [self runAsRoot:^{
-            [self runUnsandboxed:^{
-                if (enabled) {
-                    [[NSFileManager defaultManager] removeItemAtPath:safeModePath error:nil];
-                }
-                else {
-                    [[NSData data] writeToFile:safeModePath atomically:YES];
-                }
-            }];
-        }];
-    }
+    [[DOPreferenceManager sharedManager] setPreferenceValue:@(enabled) forKey:@"tweakInjectionEnabled"];
 }
 
 - (BOOL)isIDownloadEnabled
 {
-    __block BOOL isEnabled = NO;
-    [self runAsRoot:^{
-        [self runUnsandboxed:^{
-            NSDictionary *disabledDict = [NSDictionary dictionaryWithContentsOfFile:@"/var/db/com.apple.xpc.launchd/disabled.plist"];
-            NSNumber *idownloaddDisabledNum = disabledDict[@"com.opa334.Dopamine.idownloadd"];
-            if (idownloaddDisabledNum) {
-                isEnabled = ![idownloaddDisabledNum boolValue];
-            }
-            else {
-                isEnabled = NO;
-            }
-        }];
-    }];
-    return isEnabled;
+    return [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"idownloadEnabled" fallback:NO];
 }
 
 - (void)setIDownloadEnabled:(BOOL)enabled needsUnsandbox:(BOOL)needsUnsandbox

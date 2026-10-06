@@ -646,6 +646,9 @@
 - (void)refreshJailbreakAppsPressed
 {
     [[DOEnvironmentManager sharedManager] refreshJailbreakApps];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:DOLocalizedString(@"Button_Refresh_Jailbreak_Apps") message:@"Icon cache successfully refreshed!" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Close") style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)reinstallPackageManagersPressed
@@ -699,6 +702,9 @@
         }
         else {
             [[DOEnvironmentManager sharedManager] changeMobilePassword:password];
+            UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:DOLocalizedString(@"Button_Change_Mobile_Password") message:@"Password successfully updated!" preferredStyle:UIAlertControllerStyleAlert];
+            [doneAlert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Close") style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:doneAlert animated:YES completion:nil];
         }
     }];
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Cancel") style:UIAlertActionStyleCancel handler:nil];
