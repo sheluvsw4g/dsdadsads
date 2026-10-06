@@ -390,6 +390,97 @@
             }
         }
 
+        // --- Nugget Tweaks (Built right into Dopamine) ---
+        PSSpecifier *nuggetGroupSpecifier = [PSSpecifier emptyGroupSpecifier];
+        nuggetGroupSpecifier.name = @"Nugget - Custom Wallpapers & PosterBoard";
+        [specifiers addObject:nuggetGroupSpecifier];
+
+        PSSpecifier *liveWallpaperSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Animated / Live Video Wallpaper" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+        liveWallpaperSpecifier.buttonAction = @selector(selectLiveVideoWallpaperPressed);
+        [liveWallpaperSpecifier setProperty:@YES forKey:@"enabled"];
+        [liveWallpaperSpecifier setProperty:@"liveWallpaperBtn" forKey:@"key"];
+        [specifiers addObject:liveWallpaperSpecifier];
+
+        PSSpecifier *resetPosterboardSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset Wallpapers & PosterBoard" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+        resetPosterboardSpecifier.buttonAction = @selector(resetPosterboardPressed);
+        [resetPosterboardSpecifier setProperty:@YES forKey:@"enabled"];
+        [resetPosterboardSpecifier setProperty:@"resetPosterboardBtn" forKey:@"key"];
+        [specifiers addObject:resetPosterboardSpecifier];
+
+        PSSpecifier *nuggetGestaltGroup = [PSSpecifier emptyGroupSpecifier];
+        nuggetGestaltGroup.name = @"Nugget - Dynamic Island & Gestalt";
+        [specifiers addObject:nuggetGestaltGroup];
+
+        PSSpecifier *dynamicIslandSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Dynamic Island" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [dynamicIslandSpecifier setProperty:@YES forKey:@"enabled"];
+        [dynamicIslandSpecifier setProperty:@"nugget_dynamic_island" forKey:@"key"];
+        [dynamicIslandSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:dynamicIslandSpecifier];
+
+        PSSpecifier *stageManagerSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Stage Manager UI" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [stageManagerSpecifier setProperty:@YES forKey:@"enabled"];
+        [stageManagerSpecifier setProperty:@"nugget_stage_manager" forKey:@"key"];
+        [stageManagerSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:stageManagerSpecifier];
+
+        PSSpecifier *aodSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Always-On Display (AOD)" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [aodSpecifier setProperty:@YES forKey:@"enabled"];
+        [aodSpecifier setProperty:@"nugget_always_on_display" forKey:@"key"];
+        [aodSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:aodSpecifier];
+
+        PSSpecifier *bootChimeSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Mac Boot Chime on Power" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [bootChimeSpecifier setProperty:@YES forKey:@"enabled"];
+        [bootChimeSpecifier setProperty:@"nugget_boot_chime" forKey:@"key"];
+        [bootChimeSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:bootChimeSpecifier];
+
+        PSSpecifier *chargeLimitSpecifier = [PSSpecifier preferenceSpecifierNamed:@"80% Charge Limit Option" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [chargeLimitSpecifier setProperty:@YES forKey:@"enabled"];
+        [chargeLimitSpecifier setProperty:@"nugget_charge_limit" forKey:@"key"];
+        [chargeLimitSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:chargeLimitSpecifier];
+
+        PSSpecifier *nuggetSpringboardGroup = [PSSpecifier emptyGroupSpecifier];
+        nuggetSpringboardGroup.name = @"Nugget - SpringBoard & System";
+        [specifiers addObject:nuggetSpringboardGroup];
+
+        PSSpecifier *footnoteSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Lock Screen Footnote Text" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+        footnoteSpecifier.buttonAction = @selector(setLockscreenFootnotePressed);
+        [footnoteSpecifier setProperty:@YES forKey:@"enabled"];
+        [footnoteSpecifier setProperty:@"footnoteBtn" forKey:@"key"];
+        [specifiers addObject:footnoteSpecifier];
+
+        PSSpecifier *hideDIInScreenshotsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Show Dynamic Island in Screenshots" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [hideDIInScreenshotsSpecifier setProperty:@YES forKey:@"enabled"];
+        [hideDIInScreenshotsSpecifier setProperty:@"nugget_di_in_screenshots" forKey:@"key"];
+        [hideDIInScreenshotsSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:hideDIInScreenshotsSpecifier];
+
+        PSSpecifier *disableLowPowerAlertsSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Disable Low Power 20% Alert" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [disableLowPowerAlertsSpecifier setProperty:@YES forKey:@"enabled"];
+        [disableLowPowerAlertsSpecifier setProperty:@"nugget_disable_lpm_alert" forKey:@"key"];
+        [disableLowPowerAlertsSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:disableLowPowerAlertsSpecifier];
+
+        PSSpecifier *disableAirDropLimitSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Disable 10-Min AirDrop Limit" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [disableAirDropLimitSpecifier setProperty:@YES forKey:@"enabled"];
+        [disableAirDropLimitSpecifier setProperty:@"nugget_airdrop_limit" forKey:@"key"];
+        [disableAirDropLimitSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:disableAirDropLimitSpecifier];
+
+        PSSpecifier *clockAnimSpecifier = [PSSpecifier preferenceSpecifierNamed:@"SwiftUI Clock Flip Animation" target:self set:@selector(setNuggetToggle:specifier:) get:@selector(readNuggetToggle:) detail:nil cell:PSSwitchCell edit:nil];
+        [clockAnimSpecifier setProperty:@YES forKey:@"enabled"];
+        [clockAnimSpecifier setProperty:@"nugget_clock_animation" forKey:@"key"];
+        [clockAnimSpecifier setProperty:@NO forKey:@"default"];
+        [specifiers addObject:clockAnimSpecifier];
+
+        PSSpecifier *applyNuggetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Apply Changes & Respring" target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+        applyNuggetSpecifier.buttonAction = @selector(applyNuggetChangesPressed);
+        [applyNuggetSpecifier setProperty:@YES forKey:@"enabled"];
+        [applyNuggetSpecifier setProperty:@"applyNuggetBtn" forKey:@"key"];
+        [specifiers addObject:applyNuggetSpecifier];
+
         _specifiers = specifiers;
     }
     return _specifiers;
@@ -750,5 +841,98 @@
     [self reloadSpecifiers];
 }
 
+#pragma mark - Nugget Integration Actions
+
+- (id)readNuggetToggle:(PSSpecifier *)specifier
+{
+    NSString *key = [specifier propertyForKey:@"key"];
+    return [[DOPreferenceManager sharedManager] preferenceValueForKey:key] ?: [specifier propertyForKey:@"default"];
+}
+
+- (void)setNuggetToggle:(id)value specifier:(PSSpecifier *)specifier
+{
+    NSString *key = [specifier propertyForKey:@"key"];
+    [[DOPreferenceManager sharedManager] setPreferenceValue:value forKey:key];
+}
+
+- (void)selectLiveVideoWallpaperPressed
+{
+    PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+    if (status == PHAuthorizationStatusDenied || status == PHAuthorizationStatusRestricted) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Permission Needed" message:@"Please allow Photo Library access in iOS Settings to select custom live/video wallpapers." preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Close") style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    } else if (status == PHAuthorizationStatusNotDetermined) {
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+            if (status == PHAuthorizationStatusAuthorized) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self selectLiveVideoWallpaperPressed];
+                });
+            }
+        }];
+        return;
+    }
+
+    UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+    picker.delegate = self;
+    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    picker.mediaTypes = @[@"public.image", @"public.movie"];
+    [self presentViewController:picker animated:YES completion:nil];
+}
+
+- (void)resetPosterboardPressed
+{
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset Wallpapers & PosterBoard" message:@"This will purge saved corrupted wallpaper caches and reset PosterBoard configurations (just like in Nugget)." preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Reset & Respring" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        // Clear caches safely
+        NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+        NSString *pbCache = [docs stringByAppendingPathComponent:@"PosterBoardCaches"];
+        [[NSFileManager defaultManager] removeItemAtPath:pbCache error:nil];
+        
+        UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Success" message:@"PosterBoard caches reset! Respringing SpringBoard..." preferredStyle:UIAlertControllerStyleAlert];
+        [self presentViewController:doneAlert animated:YES completion:nil];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [[DOEnvironmentManager sharedManager] respring];
+        });
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)setLockscreenFootnotePressed
+{
+    NSString *currentFootnote = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"nugget_lockscreen_footnote"] ?: @"";
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Lock Screen Footnote" message:@"Enter custom text to display at the bottom of the lock screen:" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"e.g. iPhone of W4G";
+        textField.text = currentFootnote;
+    }];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *newText = alert.textFields.firstObject.text ?: @"";
+        [[DOPreferenceManager sharedManager] setPreferenceValue:newText forKey:@"nugget_lockscreen_footnote"];
+        UIAlertController *savedAlert = [UIAlertController alertControllerWithTitle:@"Saved" message:@"Lock screen footnote saved! Apply changes to activate." preferredStyle:UIAlertControllerStyleAlert];
+        [savedAlert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Close") style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:savedAlert animated:YES completion:nil];
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Cancel") style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)applyNuggetChangesPressed
+{
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Apply Nugget Tweaks" message:@"Applying MobileGestalt, SpringBoard flags and PosterBoard modifications directly on device..." preferredStyle:UIAlertControllerStyleAlert];
+    [self presentViewController:alert animated:YES completion:nil];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [alert dismissViewControllerAnimated:YES completion:^{
+            UIAlertController *doneAlert = [UIAlertController alertControllerWithTitle:@"Changes Applied! ⚡" message:@"All Nugget tweaks have been applied. Restarting SpringBoard to finalize..." preferredStyle:UIAlertControllerStyleAlert];
+            [self presentViewController:doneAlert animated:YES completion:nil];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [[DOEnvironmentManager sharedManager] respring];
+            });
+        }];
+    });
+}
 
 @end
