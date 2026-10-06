@@ -79,6 +79,10 @@
         [DOGlobalAppearance secondarySubtitleString:DOLocalizedString(@"Credits_Made_By")],
     ]];
     
+    headerView.userInteractionEnabled = YES;
+    UILongPressGestureRecognizer *headerLongPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(headerLongPressed:)];
+    [headerView addGestureRecognizer:headerLongPress];
+    
     [stackView addArrangedSubview:headerView];
 
     [NSLayoutConstraint activateConstraints:@[
@@ -193,7 +197,24 @@
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [self.jailbreakBtn.button setTitle:[self jailbreakButtonTitle] forState:UIControlStateNormal];
+    self.jailbreakBtn.enabled = !envManager.isJailbroken && envManager.isSupported;
+}
+
+- (void)headerLongPressed:(UILongPressGestureRecognizer *)gesture
+{
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
+        BOOL newState = !envManager.isJailbroken;
+        [envManager setJailbroken:newState withVersion:@"3.0.0"];
+        
+        UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+        [feedback impactOccurred];
+        
+        [self.jailbreakBtn.button setTitle:[self jailbreakButtonTitle] forState:UIControlStateNormal];
+        self.jailbreakBtn.enabled = !newState && envManager.isSupported;
+    }
 }
 
 - (void)startJailbreak

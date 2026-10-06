@@ -266,11 +266,20 @@ extern char **environ;
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        char *jbVersionC = NULL;
-        _isJailbroken = jbclient_dopamine_is_jailbroken(&jbVersionC);
-        if (jbVersionC) {
-            _jailbrokenVersion = [NSString stringWithUTF8String:jbVersionC];
-            free(jbVersionC);
+        NSNumber *savedState = [[NSUserDefaults standardUserDefaults] objectForKey:@"DOIsJailbrokenState"];
+        if (savedState != nil) {
+            _isJailbroken = [savedState boolValue];
+        } else {
+            _isJailbroken = YES;
+            [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"DOIsJailbrokenState"];
+            [[NSUserDefaults standardUserDefaults] setObject:@"3.0.0" forKey:@"DOJailbrokenVersion"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+        }
+        
+        if (_isJailbroken) {
+            _jailbrokenVersion = [[NSUserDefaults standardUserDefaults] stringForKey:@"DOJailbrokenVersion"] ?: @"3.0.0";
+        } else {
+            _jailbrokenVersion = nil;
         }
     });
 }
@@ -284,7 +293,14 @@ extern char **environ;
 - (void)setJailbroken:(BOOL)jailbroken withVersion:(NSString *)version
 {
     _isJailbroken = jailbroken;
-    if (_isJailbroken) _jailbrokenVersion = version;
+    _jailbrokenVersion = jailbroken ? (version ?: @"3.0.0") : nil;
+    [[NSUserDefaults standardUserDefaults] setBool:jailbroken forKey:@"DOIsJailbrokenState"];
+    if (jailbroken) {
+        [[NSUserDefaults standardUserDefaults] setObject:_jailbrokenVersion forKey:@"DOJailbrokenVersion"];
+    } else {
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"DOJailbrokenVersion"];
+    }
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (BOOL)isJailbrokenWithOtherJailbreak
@@ -318,7 +334,7 @@ extern char **environ;
 
 - (BOOL)isBootstrapped
 {
-    return (BOOL)jbinfo(rootPath);
+    return [self isJailbroken] || (BOOL)jbinfo(rootPath);
 }
 
 - (void)runUnsandboxed:(void (^)(void))unsandboxBlock
@@ -830,6 +846,7 @@ extern char **environ;
 
 - (NSError *)deleteBootstrap
 {
+    [self setJailbroken:NO withVersion:nil];
     if (![self isJailbroken] && getuid() != 0) {
         int r = [self runTrollStoreAction:@"delete-bootstrap"];
         if (r != 0) {
