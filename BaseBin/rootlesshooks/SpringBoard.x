@@ -186,6 +186,8 @@ static void startSpringBoardGravity(UIWindow *window) {
 	}
 }
 
+%end
+
 @interface SBIconImageView : UIView
 @end
 
