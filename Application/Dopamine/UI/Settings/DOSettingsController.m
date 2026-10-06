@@ -531,10 +531,10 @@
     [controlsScroll addSubview:styleLbl];
     ctrlY += 26;
 
-    NSArray *styleItems = @[@"m-static", @"s-static", @"s-animated"];
+    NSArray *styleItems = @[@"animated", @"static", @"m-static", @"s-static", @"s-animated"];
     self.styleSegment = [[UISegmentedControl alloc] initWithItems:styleItems];
     self.styleSegment.frame = CGRectMake(0, ctrlY, ctrlW, 34);
-    NSString *currStyle = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_anitime_style"] ?: @"m-static";
+    NSString *currStyle = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_anitime_style"] ?: @"animated";
     NSInteger styleIdx = [styleItems indexOfObject:currStyle];
     self.styleSegment.selectedSegmentIndex = (styleIdx != NSNotFound) ? styleIdx : 0;
     [self.styleSegment addTarget:self action:@selector(styleChanged:) forControlEvents:UIControlEventValueChanged];
@@ -599,7 +599,7 @@
 }
 
 - (void)styleChanged:(UISegmentedControl *)sender {
-    NSArray *styleItems = @[@"m-static", @"s-static", @"s-animated"];
+    NSArray *styleItems = @[@"animated", @"static", @"m-static", @"s-static", @"s-animated"];
     NSString *val = styleItems[sender.selectedSegmentIndex];
     [[DOPreferenceManager sharedManager] setPreferenceValue:val forKey:@"dopamine_anitime_style"];
     [self updateClockDisplay];
@@ -2061,14 +2061,16 @@
 }
 
 - (NSArray *)anitimeStyleIdentifiers {
-    return @[@"m-static", @"s-static", @"s-animated"];
+    return @[@"animated", @"static", @"m-static", @"s-static", @"s-animated"];
 }
 
 - (NSArray *)anitimeStyleNames {
     return @[
-        DOLocalizedText(@"Medium Waifu (m-static)", @"Аниме фигурки (m-static)"),
-        DOLocalizedText(@"Chibi Static (s-static)", @"Чиби фигурки (s-static)"),
-        DOLocalizedText(@"Chibi Animated (s-animated)", @"Чиби анимация (s-animated)")
+        DOLocalizedText(@"Official AniTime (Animated)", @"Оригинал AniTime (Анимированные)"),
+        DOLocalizedText(@"Official AniTime (Static)", @"Оригинал AniTime (Статичные)"),
+        DOLocalizedText(@"Waifu Pack (m-static)", @"Аниме фигурки (m-static)"),
+        DOLocalizedText(@"Chibi Pack (s-static)", @"Чиби фигурки (s-static)"),
+        DOLocalizedText(@"Chibi Pack (s-animated)", @"Чиби анимация (s-animated)")
     ];
 }
 
@@ -2825,6 +2827,41 @@
         doPrefDict[@"dopamine_aim_font"] = [prefs preferenceValueForKey:@"dopamine_aim_font"] ?: @"rounded";
         doPrefDict[@"dopamine_aim_color"] = [prefs preferenceValueForKey:@"dopamine_aim_color"] ?: @"white";
         [doPrefDict writeToFile:doPrefPath atomically:YES];
+
+        // 12.2 AniTime Tweak Files Installation
+        BOOL anitimeOn = [prefs boolPreferenceValueForKey:@"dopamine_anitime_enabled" fallback:NO];
+        NSString *jbPrefix = @"/var/jb";
+        NSString *aniBundleDest = [jbPrefix stringByAppendingPathComponent:@"Library/Application Support/AniTime.bundle"];
+        NSString *aniDylibDest = [jbPrefix stringByAppendingPathComponent:@"Library/MobileSubstrate/DynamicLibraries/AniTime.dylib"];
+        NSString *aniPlistDest = [jbPrefix stringByAppendingPathComponent:@"Library/MobileSubstrate/DynamicLibraries/AniTime.plist"];
+        NSString *appAniDir = [[NSBundle mainBundle] pathForResource:@"AniTime" ofType:nil];
+        if (!appAniDir) {
+            appAniDir = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"AniTime"];
+        }
+
+        if (anitimeOn && [[NSFileManager defaultManager] fileExistsAtPath:appAniDir]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:[aniBundleDest stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+            [[NSFileManager defaultManager] createDirectoryAtPath:[aniDylibDest stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+            
+            // Copy AniTime bundle assets
+            [[NSFileManager defaultManager] removeItemAtPath:aniBundleDest error:nil];
+            [[NSFileManager defaultManager] copyItemAtPath:appAniDir toPath:aniBundleDest error:nil];
+
+            // Copy AniTime tweak dylib & filter plist
+            NSString *bundledDylib = [appAniDir stringByAppendingPathComponent:@"AniTime.dylib"];
+            NSString *bundledPlist = [appAniDir stringByAppendingPathComponent:@"AniTime.plist"];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:bundledDylib]) {
+                [[NSFileManager defaultManager] removeItemAtPath:aniDylibDest error:nil];
+                [[NSFileManager defaultManager] copyItemAtPath:bundledDylib toPath:aniDylibDest error:nil];
+            }
+            if ([[NSFileManager defaultManager] fileExistsAtPath:bundledPlist]) {
+                [[NSFileManager defaultManager] removeItemAtPath:aniPlistDest error:nil];
+                [[NSFileManager defaultManager] copyItemAtPath:bundledPlist toPath:aniPlistDest error:nil];
+            }
+        } else if (!anitimeOn) {
+            [[NSFileManager defaultManager] removeItemAtPath:aniDylibDest error:nil];
+            [[NSFileManager defaultManager] removeItemAtPath:aniPlistDest error:nil];
+        }
 
         // 13. Custom Resolution
         NSNumber *resW = [prefs preferenceValueForKey:@"dopamine_custom_res_w"];

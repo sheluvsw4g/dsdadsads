@@ -90,5 +90,53 @@
 		<key>titleShadow</key>
 		<false/>
 	</dict>
+	<dict>
+		<key>key</key>
+		<string>orange</string>
+		<key>name</key>
+		<string>Vibrant Orange</string>
+		<key>image</key>
+		<string>Background_Orange.jpg</string>
+		<key>actionMenuColor</key>
+		<string>4F712A0C</string>
+		<key>windowColor</key>
+		<string>600A0504</string>
+		<key>blur</key>
+		<integer>22</integer>
+		<key>titleShadow</key>
+		<false/>
+	</dict>
+	<dict>
+		<key>key</key>
+		<string>black</string>
+		<key>name</key>
+		<string>Midnight Black (OLED)</string>
+		<key>image</key>
+		<string>Background_Black.jpg</string>
+		<key>actionMenuColor</key>
+		<string>66101216</string>
+		<key>windowColor</key>
+		<string>80050608</string>
+		<key>blur</key>
+		<integer>15</integer>
+		<key>titleShadow</key>
+		<false/>
+	</dict>
+	<dict>
+		<key>key</key>
+		<string>white</string>
+		<key>name</key>
+		<string>Frost White</string>
+		<key>image</key>
+		<string>Background_White.jpg</string>
+		<key>actionMenuColor</key>
+		<string>88E0E6ED</string>
+		<key>windowColor</key>
+		<string>99F5F7FA</string>
+		<key>blur</key>
+		<integer>20</integer>
+		<key>titleShadow</key>
+		<true/>
+	</dict>
 </array>
 </plist>

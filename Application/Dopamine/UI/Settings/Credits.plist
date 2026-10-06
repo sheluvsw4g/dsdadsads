@@ -79,6 +79,12 @@
 				</dict>
 				<dict>
 					<key>name</key>
+					<string>syn4pse</string>
+					<key>link</key>
+					<string>https://github.com/syn4pse</string>
+				</dict>
+				<dict>
+					<key>name</key>
 					<string>kok3shidoll</string>
 					<key>link</key>
 					<string>https://github.com/kok3shidoll</string>
