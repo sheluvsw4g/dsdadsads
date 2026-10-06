@@ -262,26 +262,29 @@ extern char **environ;
     return trollstoreInstallation;
 }
 
+- (NSString *)jailbreakMarkerPath
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *docsDir = [paths firstObject];
+    return [docsDir stringByAppendingPathComponent:@".dopamine_jailbroken"];
+}
+
 - (void)updateJailbreakState
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSNumber *savedState = [[NSUserDefaults standardUserDefaults] objectForKey:@"DOIsJailbrokenState"];
-        if (savedState != nil) {
-            _isJailbroken = [savedState boolValue];
+    NSString *markerPath = [self jailbreakMarkerPath];
+    BOOL markerExists = [[NSFileManager defaultManager] fileExistsAtPath:markerPath];
+    
+    _isJailbroken = markerExists;
+    if (_isJailbroken) {
+        NSString *savedVer = [NSString stringWithContentsOfFile:markerPath encoding:NSUTF8StringEncoding error:nil];
+        if (savedVer && savedVer.length) {
+            _jailbrokenVersion = [savedVer stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         } else {
-            _isJailbroken = YES;
-            [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"DOIsJailbrokenState"];
-            [[NSUserDefaults standardUserDefaults] setObject:@"3.0.0" forKey:@"DOJailbrokenVersion"];
-            [[NSUserDefaults standardUserDefaults] synchronize];
+            _jailbrokenVersion = @"3.0.0";
         }
-        
-        if (_isJailbroken) {
-            _jailbrokenVersion = [[NSUserDefaults standardUserDefaults] stringForKey:@"DOJailbrokenVersion"] ?: @"3.0.0";
-        } else {
-            _jailbrokenVersion = nil;
-        }
-    });
+    } else {
+        _jailbrokenVersion = nil;
+    }
 }
 
 - (BOOL)isJailbroken
@@ -294,6 +297,15 @@ extern char **environ;
 {
     _isJailbroken = jailbroken;
     _jailbrokenVersion = jailbroken ? (version ?: @"3.0.0") : nil;
+    
+    NSString *markerPath = [self jailbreakMarkerPath];
+    if (jailbroken) {
+        NSString *ver = _jailbrokenVersion ?: @"3.0.0";
+        [ver writeToFile:markerPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    } else {
+        [[NSFileManager defaultManager] removeItemAtPath:markerPath error:nil];
+    }
+    
     [[NSUserDefaults standardUserDefaults] setBool:jailbroken forKey:@"DOIsJailbrokenState"];
     if (jailbroken) {
         [[NSUserDefaults standardUserDefaults] setObject:_jailbrokenVersion forKey:@"DOJailbrokenVersion"];

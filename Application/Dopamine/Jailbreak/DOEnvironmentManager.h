@@ -44,6 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)locateJailbreakRoot;
 - (NSError *)ensureJailbreakRootExists;
 
+- (NSString *)jailbreakMarkerPath;
 - (void)setJailbroken:(BOOL)jailbroken withVersion:(NSString *)version;
 
 

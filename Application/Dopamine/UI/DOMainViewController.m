@@ -194,12 +194,17 @@
     return jailbreakButtonTitle;
 }
 
-- (void)viewWillAppear:(BOOL)animated
+- (void)updateButtonUI
 {
-    [super viewWillAppear:animated];
     DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [self.jailbreakBtn.button setTitle:[self jailbreakButtonTitle] forState:UIControlStateNormal];
     self.jailbreakBtn.enabled = !envManager.isJailbroken && envManager.isSupported;
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    [self updateButtonUI];
 }
 
 - (void)headerLongPressed:(UILongPressGestureRecognizer *)gesture
@@ -212,8 +217,7 @@
         UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
         [feedback impactOccurred];
         
-        [self.jailbreakBtn.button setTitle:[self jailbreakButtonTitle] forState:UIControlStateNormal];
-        self.jailbreakBtn.enabled = !newState && envManager.isSupported;
+        [self updateButtonUI];
     }
 }
 
