@@ -1,4 +1,6 @@
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import <dlfcn.h>
 #import <substrate.h>
 #import <objc/objc.h>
 #import <libroot.h>
@@ -64,9 +66,6 @@ bool string_has_prefix(const char *str, const char* prefix)
 	va_end(a);
 	return %orig(fildes, cmd, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
-
-#import <UIKit/UIKit.h>
-#import <dlfcn.h>
 
 static BOOL gGravityActive = NO;
 static UIDynamicAnimator *gGravityAnimator = nil;
@@ -134,7 +133,7 @@ static void startSpringBoardGravity(UIWindow *window) {
 	
 	gCollisionBehavior = [[UICollisionBehavior alloc] initWithItems:icons];
 	gCollisionBehavior.translatesReferenceBoundsIntoBoundary = YES;
-	gCollisionBehavior.collisionMode = UICollisionModeEverything;
+	gCollisionBehavior.collisionMode = UICollisionBehaviorModeEverything;
 	
 	gItemBehavior = [[UIDynamicItemBehavior alloc] initWithItems:icons];
 	gItemBehavior.elasticity = 0.58;
@@ -315,10 +314,10 @@ static void updateAniTimeView(SBFLockScreenDateView *dateView)
 				NSString *fontPref = prefs[@"dopamine_aim_font"] ?: @"rounded";
 				UIFont *clockFont = nil;
 				if ([fontPref isEqualToString:@"rounded"]) {
-					UIFontDescriptor *d = [[UIFont systemFontOfSize:80 weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignRounded];
+					UIFontDescriptor *d = [[UIFont systemFontOfSize:80 weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorSystemDesignRounded];
 					clockFont = d ? [UIFont fontWithDescriptor:d size:80] : [UIFont systemFontOfSize:80 weight:UIFontWeightBold];
 				} else if ([fontPref isEqualToString:@"serif"]) {
-					UIFontDescriptor *d = [[UIFont systemFontOfSize:80 weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignSerif];
+					UIFontDescriptor *d = [[UIFont systemFontOfSize:80 weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorSystemDesignSerif];
 					clockFont = d ? [UIFont fontWithDescriptor:d size:80] : [UIFont systemFontOfSize:80 weight:UIFontWeightBold];
 				} else if ([fontPref isEqualToString:@"mono"]) {
 					clockFont = [UIFont monospacedDigitSystemFontOfSize:80 weight:UIFontWeightBold];
