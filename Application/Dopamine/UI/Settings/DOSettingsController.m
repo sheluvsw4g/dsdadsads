@@ -300,7 +300,7 @@
 
     self.collisionBehavior = [[UICollisionBehavior alloc] initWithItems:self.iconContainers];
     self.collisionBehavior.translatesReferenceBoundsIntoBoundary = YES;
-    self.collisionBehavior.collisionMode = UICollisionModeEverything;
+    self.collisionBehavior.collisionMode = UICollisionBehaviorModeEverything;
 
     self.itemBehavior = [[UIDynamicItemBehavior alloc] initWithItems:self.iconContainers];
     self.itemBehavior.elasticity = 0.58;
@@ -622,13 +622,13 @@
 - (UIFont *)selectedAIMFontWithSize:(CGFloat)size {
     NSString *currFont = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_aim_font"] ?: @"rounded";
     if ([currFont isEqualToString:@"rounded"]) {
-        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignRounded];
+        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorSystemDesignRounded];
         return desc ? [UIFont fontWithDescriptor:desc size:size] : [UIFont systemFontOfSize:size weight:UIFontWeightBold];
     } else if ([currFont isEqualToString:@"serif"]) {
-        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignSerif];
+        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorSystemDesignSerif];
         return desc ? [UIFont fontWithDescriptor:desc size:size] : [UIFont systemFontOfSize:size weight:UIFontWeightBold];
     } else if ([currFont isEqualToString:@"mono"]) {
-        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorDesignMonospaced];
+        UIFontDescriptor *desc = [[UIFont systemFontOfSize:size weight:UIFontWeightBold].fontDescriptor fontDescriptorWithDesign:UIFontDescriptorSystemDesignMonospaced];
         return desc ? [UIFont fontWithDescriptor:desc size:size] : [UIFont monospacedDigitSystemFontOfSize:size weight:UIFontWeightBold];
     } else if ([currFont isEqualToString:@"stencil"]) {
         return [UIFont fontWithName:@"Impact" size:size] ?: [UIFont systemFontOfSize:size weight:UIFontWeightHeavy];
