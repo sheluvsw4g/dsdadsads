@@ -72,24 +72,42 @@ static UIDynamicAnimator *gGravityAnimator = nil;
 static UIGravityBehavior *gGravityBehavior = nil;
 static UICollisionBehavior *gCollisionBehavior = nil;
 static UIDynamicItemBehavior *gItemBehavior = nil;
+static UIAttachmentBehavior *gPanAttachment = nil;
 static id gMotionManager = nil;
 static NSMutableArray *gAnimatedIcons = nil;
 static NSMutableDictionary *gOriginalCenters = nil;
+static UIPanGestureRecognizer *gGravityPanGesture = nil;
+static UITapGestureRecognizer *gGravityTapGesture = nil;
+static __weak UIWindow *gGravityWindow = nil;
 
 static void stopSpringBoardGravity(void) {
 	if (!gGravityActive) return;
 	gGravityActive = NO;
+	
 	if (gMotionManager) {
 		@try {
 			[gMotionManager performSelector:@selector(stopDeviceMotionUpdates)];
 		} @catch (id ex) {}
 		gMotionManager = nil;
 	}
+	
+	if (gGravityWindow) {
+		if (gGravityPanGesture) {
+			[gGravityWindow removeGestureRecognizer:gGravityPanGesture];
+			gGravityPanGesture = nil;
+		}
+		if (gGravityTapGesture) {
+			[gGravityWindow removeGestureRecognizer:gGravityTapGesture];
+			gGravityTapGesture = nil;
+		}
+	}
+	
 	if (gGravityAnimator) {
 		[gGravityAnimator removeAllBehaviors];
 		gGravityAnimator = nil;
 	}
-	[UIView animateWithDuration:0.65 delay:0 usingSpringWithDamping:0.75 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
+	
+	[UIView animateWithDuration:0.6 delay:0 usingSpringWithDamping:0.75 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
 		for (UIView *icon in gAnimatedIcons) {
 			NSValue *centerVal = gOriginalCenters[[NSValue valueWithNonretainedObject:icon]];
 			if (centerVal) {
@@ -100,7 +118,66 @@ static void stopSpringBoardGravity(void) {
 	} completion:^(BOOL finished) {
 		[gAnimatedIcons removeAllObjects];
 		[gOriginalCenters removeAllObjects];
+		gGravityWindow = nil;
 	}];
+}
+
+static void handleGravityPan(UIPanGestureRecognizer *gesture) {
+	if (!gGravityActive || !gGravityAnimator) return;
+	CGPoint location = [gesture locationInView:gesture.view];
+	
+	if (gesture.state == UIGestureRecognizerStateBegan) {
+		for (UIView *icon in gAnimatedIcons) {
+			if (CGRectContainsPoint(icon.frame, location)) {
+				UIOffset offset = UIOffsetMake(location.x - icon.center.x, location.y - icon.center.y);
+				gPanAttachment = [[UIAttachmentBehavior alloc] initWithItem:icon offsetFromCenter:offset attachedToAnchor:location];
+				[gGravityAnimator addBehavior:gPanAttachment];
+				break;
+			}
+		}
+	} else if (gesture.state == UIGestureRecognizerStateChanged) {
+		if (gPanAttachment) {
+			gPanAttachment.anchorPoint = location;
+		}
+	} else if (gesture.state == UIGestureRecognizerStateEnded || gesture.state == UIGestureRecognizerStateCancelled) {
+		if (gPanAttachment) {
+			[gGravityAnimator removeBehavior:gPanAttachment];
+			gPanAttachment = nil;
+			CGPoint vel = [gesture velocityInView:gesture.view];
+			for (UIView *icon in gAnimatedIcons) {
+				if (CGRectContainsPoint(icon.frame, location)) {
+					[gItemBehavior addLinearVelocity:CGPointMake(vel.x * 0.8, vel.y * 0.8) forItem:icon];
+					break;
+				}
+			}
+		}
+	}
+}
+
+static void handleGravityTap(UITapGestureRecognizer *gesture) {
+	if (!gGravityActive) return;
+	CGPoint location = [gesture locationInView:gesture.view];
+	for (UIView *icon in gAnimatedIcons) {
+		if (CGRectContainsPoint(icon.frame, location)) {
+			// Find icon model and launch application if possible
+			@try {
+				if ([icon respondsToSelector:@selector(icon)]) {
+					id iconModel = [icon performSelector:@selector(icon)];
+					if ([iconModel respondsToSelector:@selector(applicationBundleID)]) {
+						NSString *bundleID = [iconModel performSelector:@selector(applicationBundleID)];
+						if (bundleID) {
+							Class appWorkspace = NSClassFromString(@"LSApplicationWorkspace");
+							if (appWorkspace) {
+								id ws = [appWorkspace performSelector:@selector(defaultWorkspace)];
+								[ws performSelector:@selector(openApplicationWithBundleID:) withObject:bundleID];
+							}
+						}
+					}
+				}
+			} @catch (id ex) {}
+			break;
+		}
+	}
 }
 
 static void startSpringBoardGravity(UIWindow *window) {
@@ -111,7 +188,8 @@ static void startSpringBoardGravity(UIWindow *window) {
 	while (queue.count) {
 		UIView *curr = queue.firstObject;
 		[queue removeObjectAtIndex:0];
-		if ([NSStringFromClass([curr class]) containsString:@"IconView"]) {
+		NSString *className = NSStringFromClass([curr class]);
+		if ([className containsString:@"IconView"] && ![className containsString:@"FolderIcon"]) {
 			[icons addObject:curr];
 		} else {
 			[queue addObjectsFromArray:curr.subviews];
@@ -122,6 +200,7 @@ static void startSpringBoardGravity(UIWindow *window) {
 	
 	gGravityActive = YES;
 	gAnimatedIcons = icons;
+	gGravityWindow = window;
 	gOriginalCenters = [NSMutableDictionary new];
 	for (UIView *icon in icons) {
 		gOriginalCenters[[NSValue valueWithNonretainedObject:icon]] = [NSValue valueWithCGPoint:icon.center];
@@ -129,21 +208,28 @@ static void startSpringBoardGravity(UIWindow *window) {
 	
 	gGravityAnimator = [[UIDynamicAnimator alloc] initWithReferenceView:window];
 	gGravityBehavior = [[UIGravityBehavior alloc] initWithItems:icons];
-	gGravityBehavior.gravityDirection = CGVectorMake(0.0, 1.2);
+	gGravityBehavior.gravityDirection = CGVectorMake(0.0, 1.5);
 	
 	gCollisionBehavior = [[UICollisionBehavior alloc] initWithItems:icons];
 	gCollisionBehavior.translatesReferenceBoundsIntoBoundary = YES;
 	gCollisionBehavior.collisionMode = UICollisionBehaviorModeEverything;
 	
 	gItemBehavior = [[UIDynamicItemBehavior alloc] initWithItems:icons];
-	gItemBehavior.elasticity = 0.58;
-	gItemBehavior.friction = 0.22;
+	gItemBehavior.elasticity = 0.62;
+	gItemBehavior.friction = 0.18;
 	gItemBehavior.allowsRotation = YES;
 	
 	[gGravityAnimator addBehavior:gGravityBehavior];
 	[gGravityAnimator addBehavior:gCollisionBehavior];
 	[gGravityAnimator addBehavior:gItemBehavior];
 	
+	// Add interactive pan and tap gestures
+	gGravityPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:window action:@selector(handleGravityPanGesture:)];
+	gGravityTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:window action:@selector(handleGravityTapGesture:)];
+	[window addGestureRecognizer:gGravityPanGesture];
+	[window addGestureRecognizer:gGravityTapGesture];
+	
+	// Real accelerometer & device tilt support
 	Class motionClass = NSClassFromString(@"CMMotionManager");
 	if (!motionClass) {
 		dlopen("/System/Library/Frameworks/CoreMotion.framework/CoreMotion", RTLD_NOW);
@@ -152,6 +238,32 @@ static void startSpringBoardGravity(UIWindow *window) {
 	if (motionClass) {
 		@try {
 			gMotionManager = [[motionClass alloc] init];
+			if ([gMotionManager respondsToSelector:@selector(isDeviceMotionAvailable)] &&
+				((BOOL (*)(id, SEL))objc_msgSend)(gMotionManager, @selector(isDeviceMotionAvailable))) {
+				
+				[gMotionManager setValue:@(1.0 / 40.0) forKey:@"deviceMotionUpdateInterval"];
+				NSOperationQueue *queue = [NSOperationQueue mainQueue];
+				void (^motionHandler)(id, NSError *) = ^(id motion, NSError *error) {
+					if (!gGravityActive || !gGravityBehavior || !motion) return;
+					@try {
+						id gravityObj = [motion valueForKey:@"gravity"];
+						if (gravityObj) {
+							NSNumber *gxNum = [gravityObj valueForKey:@"x"];
+							NSNumber *gyNum = [gravityObj valueForKey:@"y"];
+							if (gxNum && gyNum) {
+								double gx = [gxNum doubleValue];
+								double gy = [gyNum doubleValue];
+								gGravityBehavior.gravityDirection = CGVectorMake(gx * 2.5, -gy * 2.5);
+							}
+						}
+					} @catch (id ex) {}
+				};
+				
+				SEL startSel = NSSelectorFromString(@"startDeviceMotionUpdatesToQueue:withHandler:");
+				if ([gMotionManager respondsToSelector:startSel]) {
+					((void (*)(id, SEL, id, id))objc_msgSend)(gMotionManager, startSel, queue, motionHandler);
+				}
+			}
 		} @catch (id ex) {}
 	}
 }
@@ -173,6 +285,18 @@ static void startSpringBoardGravity(UIWindow *window) {
 	}
 }
 
+%new
+- (void)handleGravityPanGesture:(UIPanGestureRecognizer *)gesture
+{
+	handleGravityPan(gesture);
+}
+
+%new
+- (void)handleGravityTapGesture:(UITapGestureRecognizer *)gesture
+{
+	handleGravityTap(gesture);
+}
+
 %end
 
 %hook SpringBoard
@@ -183,6 +307,29 @@ static void startSpringBoardGravity(UIWindow *window) {
 	if (gGravityActive) {
 		stopSpringBoardGravity();
 	}
+}
+
+- (void)applicationDidFinishLaunching:(id)application
+{
+	%orig;
+	[[NSNotificationCenter defaultCenter] addObserverForName:@"com.opa334.dopamine.togglegravity" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+		UIWindow *keyWin = nil;
+		for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+			if ([scene isKindOfClass:[UIWindowScene class]]) {
+				for (UIWindow *w in ((UIWindowScene *)scene).windows) {
+					if (w.isKeyWindow || [NSStringFromClass([w class]) containsString:@"HomeScreen"]) {
+						keyWin = w;
+						break;
+					}
+				}
+			}
+		}
+		if (!keyWin) keyWin = [UIApplication sharedApplication].windows.firstObject;
+		if (keyWin) {
+			if (gGravityActive) stopSpringBoardGravity();
+			else startSpringBoardGravity(keyWin);
+		}
+	}];
 }
 
 %end
