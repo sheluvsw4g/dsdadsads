@@ -32,6 +32,11 @@
 	return nil;
 }
 
+- (NSArray *)enabledPackageManagerKeys
+{
+	return @[@"org.coolstar.SileoStore"];
+}
+
 - (id)renderBootLogo
 {
     return nil;
