@@ -321,10 +321,11 @@ static void startSpringBoardGravity(UIWindow *window) {
 						keyWin = w;
 						break;
 					}
+					if (!keyWin) keyWin = w;
 				}
 			}
+			if (keyWin) break;
 		}
-		if (!keyWin) keyWin = [UIApplication sharedApplication].windows.firstObject;
 		if (keyWin) {
 			if (gGravityActive) stopSpringBoardGravity();
 			else startSpringBoardGravity(keyWin);
