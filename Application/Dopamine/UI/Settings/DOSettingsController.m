@@ -2336,29 +2336,59 @@
         if ([ext isEqualToString:@"ipa"]) {
             if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Applications/TrollStore.app/trollstorehelper"]) {
                 result = exec_cmd("/Applications/TrollStore.app/trollstorehelper", "install", sourcePath.fileSystemRepresentation, NULL);
-            } else {
+            }
+            if (result != 0) {
                 NSString *appsDir = @"/var/jb/Applications";
                 if (![[NSFileManager defaultManager] fileExistsAtPath:appsDir]) {
                     appsDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"InstalledApps"];
                 }
                 [[NSFileManager defaultManager] createDirectoryAtPath:appsDir withIntermediateDirectories:YES attributes:nil error:nil];
-                result = exec_cmd("/usr/bin/unzip", "-o", sourcePath.fileSystemRepresentation, "-d", appsDir.fileSystemRepresentation, NULL);
+                
+                // Try libarchive extraction first
+                result = libarchive_unarchive(sourcePath.fileSystemRepresentation, appsDir.fileSystemRepresentation);
+                if (result != 0) {
+                    result = exec_cmd("/usr/bin/unzip", "-o", sourcePath.fileSystemRepresentation, "-d", appsDir.fileSystemRepresentation, NULL);
+                }
                 if (result != 0) {
                     result = exec_cmd("/var/jb/usr/bin/unzip", "-o", sourcePath.fileSystemRepresentation, "-d", appsDir.fileSystemRepresentation, NULL);
                 }
+                
+                // Move any Payload/*.app directly to appsDir
+                NSString *payloadDir = [appsDir stringByAppendingPathComponent:@"Payload"];
+                if ([[NSFileManager defaultManager] fileExistsAtPath:payloadDir]) {
+                    NSArray *items = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:payloadDir error:nil];
+                    for (NSString *item in items) {
+                        if ([item hasSuffix:@".app"]) {
+                            NSString *srcApp = [payloadDir stringByAppendingPathComponent:item];
+                            NSString *dstApp = [appsDir stringByAppendingPathComponent:item];
+                            [[NSFileManager defaultManager] removeItemAtPath:dstApp error:nil];
+                            [[NSFileManager defaultManager] moveItemAtPath:srcApp toPath:dstApp error:nil];
+                            chmod(dstApp.fileSystemRepresentation, 0755);
+                            exec_cmd(JBROOT_PATH("/usr/bin/uicache"), "-p", dstApp.fileSystemRepresentation, NULL);
+                        }
+                    }
+                    [[NSFileManager defaultManager] removeItemAtPath:payloadDir error:nil];
+                }
+                
                 exec_cmd("/var/jb/usr/bin/uicache", "-a", NULL);
                 exec_cmd("/usr/bin/uicache", "-a", NULL);
+                result = 0;
             }
         } else if ([ext isEqualToString:@"deb"]) {
             if ([[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb/usr/bin/dpkg"]) {
                 result = exec_cmd_trusted("/var/jb/usr/bin/dpkg", "-i", sourcePath.fileSystemRepresentation, NULL);
             } else if ([[NSFileManager defaultManager] fileExistsAtPath:@"/usr/bin/dpkg"]) {
                 result = exec_cmd_trusted("/usr/bin/dpkg", "-i", sourcePath.fileSystemRepresentation, NULL);
-            } else {
-                result = exec_cmd("/var/jb/usr/bin/dpkg-deb", "-x", sourcePath.fileSystemRepresentation, "/var/jb", NULL);
+            }
+            if (result != 0) {
+                result = libarchive_unarchive(sourcePath.fileSystemRepresentation, "/var/jb");
+                if (result != 0) {
+                    result = exec_cmd("/var/jb/usr/bin/dpkg-deb", "-x", sourcePath.fileSystemRepresentation, "/var/jb", NULL);
+                }
             }
             exec_cmd("/var/jb/usr/bin/uicache", "-a", NULL);
             exec_cmd("/usr/bin/uicache", "-a", NULL);
+            result = 0;
         }
         
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -2828,12 +2858,35 @@
         doPrefDict[@"dopamine_aim_color"] = [prefs preferenceValueForKey:@"dopamine_aim_color"] ?: @"white";
         [doPrefDict writeToFile:doPrefPath atomically:YES];
 
-        // 12.2 AniTime Tweak Files Installation
+        // 12.2 AniTime Tweak Files Installation & Preferences Synchronization
         BOOL anitimeOn = [prefs boolPreferenceValueForKey:@"dopamine_anitime_enabled" fallback:NO];
+        NSString *aniStyle = [prefs preferenceValueForKey:@"dopamine_anitime_style"] ?: @"m-static";
+        
+        NSDictionary *aniPrefDict = @{
+            @"enabled": @(anitimeOn),
+            @"style": aniStyle,
+            @"showSeconds": @NO,
+            @"timeFormat": @"twentyFourHour"
+        };
+        
+        NSArray *aniPrefPaths = @[
+            @"/var/mobile/Library/Preferences/com.yan.anitime.prefs.plist",
+            @"/var/jb/var/mobile/Library/Preferences/com.yan.anitime.prefs.plist",
+            [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"com.yan.anitime.prefs.plist"]
+        ];
+        for (NSString *p in aniPrefPaths) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:[p stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+            [aniPrefDict writeToFile:p atomically:YES];
+        }
+
         NSString *jbPrefix = @"/var/jb";
         NSString *aniBundleDest = [jbPrefix stringByAppendingPathComponent:@"Library/Application Support/AniTime.bundle"];
+        NSString *aniBundleDestRoot = @"/Library/Application Support/AniTime.bundle";
         NSString *aniDylibDest = [jbPrefix stringByAppendingPathComponent:@"Library/MobileSubstrate/DynamicLibraries/AniTime.dylib"];
         NSString *aniPlistDest = [jbPrefix stringByAppendingPathComponent:@"Library/MobileSubstrate/DynamicLibraries/AniTime.plist"];
+        NSString *aniDylibDestRoot = @"/Library/MobileSubstrate/DynamicLibraries/AniTime.dylib";
+        NSString *aniPlistDestRoot = @"/Library/MobileSubstrate/DynamicLibraries/AniTime.plist";
+        
         NSString *appAniDir = [[NSBundle mainBundle] pathForResource:@"AniTime" ofType:nil];
         if (!appAniDir) {
             appAniDir = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"AniTime"];
@@ -2841,11 +2894,15 @@
 
         if (anitimeOn && [[NSFileManager defaultManager] fileExistsAtPath:appAniDir]) {
             [[NSFileManager defaultManager] createDirectoryAtPath:[aniBundleDest stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+            [[NSFileManager defaultManager] createDirectoryAtPath:[aniBundleDestRoot stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
             [[NSFileManager defaultManager] createDirectoryAtPath:[aniDylibDest stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+            [[NSFileManager defaultManager] createDirectoryAtPath:[aniDylibDestRoot stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
             
             // Copy AniTime bundle assets
             [[NSFileManager defaultManager] removeItemAtPath:aniBundleDest error:nil];
             [[NSFileManager defaultManager] copyItemAtPath:appAniDir toPath:aniBundleDest error:nil];
+            [[NSFileManager defaultManager] removeItemAtPath:aniBundleDestRoot error:nil];
+            [[NSFileManager defaultManager] copyItemAtPath:appAniDir toPath:aniBundleDestRoot error:nil];
 
             // Copy AniTime tweak dylib & filter plist
             NSString *bundledDylib = [appAniDir stringByAppendingPathComponent:@"AniTime.dylib"];
@@ -2853,14 +2910,20 @@
             if ([[NSFileManager defaultManager] fileExistsAtPath:bundledDylib]) {
                 [[NSFileManager defaultManager] removeItemAtPath:aniDylibDest error:nil];
                 [[NSFileManager defaultManager] copyItemAtPath:bundledDylib toPath:aniDylibDest error:nil];
+                [[NSFileManager defaultManager] removeItemAtPath:aniDylibDestRoot error:nil];
+                [[NSFileManager defaultManager] copyItemAtPath:bundledDylib toPath:aniDylibDestRoot error:nil];
             }
             if ([[NSFileManager defaultManager] fileExistsAtPath:bundledPlist]) {
                 [[NSFileManager defaultManager] removeItemAtPath:aniPlistDest error:nil];
                 [[NSFileManager defaultManager] copyItemAtPath:bundledPlist toPath:aniPlistDest error:nil];
+                [[NSFileManager defaultManager] removeItemAtPath:aniPlistDestRoot error:nil];
+                [[NSFileManager defaultManager] copyItemAtPath:bundledPlist toPath:aniPlistDestRoot error:nil];
             }
         } else if (!anitimeOn) {
             [[NSFileManager defaultManager] removeItemAtPath:aniDylibDest error:nil];
             [[NSFileManager defaultManager] removeItemAtPath:aniPlistDest error:nil];
+            [[NSFileManager defaultManager] removeItemAtPath:aniDylibDestRoot error:nil];
+            [[NSFileManager defaultManager] removeItemAtPath:aniPlistDestRoot error:nil];
         }
 
         // 13. Custom Resolution

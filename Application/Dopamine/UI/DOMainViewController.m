@@ -21,6 +21,8 @@
 
 @property DOJailbreakButton *jailbreakBtn;
 @property NSArray<NSLayoutConstraint *> *jailbreakButtonConstraints;
+@property DOActionMenuView *actionView;
+@property UIStackView *anitimeClockView;
 @property DOActionMenuButton *updateButton;
 @property(nonatomic) BOOL hideStatusBar;
 @property(nonatomic) BOOL hideHomeIndicator;
@@ -89,32 +91,28 @@
         [headerView.leadingAnchor constraintEqualToAnchor:stackView.leadingAnchor constant:5],
         [headerView.trailingAnchor constraintEqualToAnchor:stackView.trailingAnchor]
     ]];
+
+    // AniTime Widget (if enabled)
+    self.anitimeClockView = [[UIStackView alloc] init];
+    self.anitimeClockView.axis = UILayoutConstraintAxisHorizontal;
+    self.anitimeClockView.alignment = UIStackViewAlignmentCenter;
+    self.anitimeClockView.distribution = UIStackViewDistributionEqualCentering;
+    self.anitimeClockView.spacing = 3;
+    self.anitimeClockView.translatesAutoresizingMaskIntoConstraints = NO;
+    [stackView addArrangedSubview:self.anitimeClockView];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.anitimeClockView.centerXAnchor constraintEqualToAnchor:stackView.centerXAnchor],
+        [self.anitimeClockView.heightAnchor constraintEqualToConstant:50]
+    ]];
     
     //Action Menu
-    DOActionMenuView *actionView = [[DOActionMenuView alloc] initWithActions:@[
-        [UIAction actionWithTitle:DOLocalizedString(@"Menu_Settings_Title") image:[UIImage systemImageNamed:@"gearshape" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"settings" handler:^(__kindof UIAction * _Nonnull action) {
-            [self.navigationController pushViewController:[[DOSettingsController alloc] init] animated:YES];
-        }],
-        [UIAction actionWithTitle:DOLocalizedString(@"Menu_Restart_SpringBoard_Title") image:[UIImage systemImageNamed:@"arrow.clockwise" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"respring" handler:^(__kindof UIAction * _Nonnull action) {
-            [self fadeToBlack:^{
-                [[DOEnvironmentManager sharedManager] respring];
-            }];
-        }],
-        [UIAction actionWithTitle:DOLocalizedString(@"Menu_Reboot_Userspace_Title") image:[UIImage systemImageNamed:@"arrow.clockwise.circle" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"reboot-userspace" handler:^(__kindof UIAction * _Nonnull action) {
-            [self fadeToBlack:^{
-                [[DOEnvironmentManager sharedManager] rebootUserspace];
-            }];
-        }],
-        [UIAction actionWithTitle:DOLocalizedString(@"Menu_Credits_Title") image:[UIImage systemImageNamed:@"info.circle" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"credits" handler:^(__kindof UIAction * _Nonnull action) {
-            [self.navigationController pushViewController:[[DOCreditsViewController alloc] init] animated:YES];
-        }]
-    ] delegate:self];
+    self.actionView = [[DOActionMenuView alloc] initWithActions:[self currentActionMenuActions] delegate:self];
     
-    [stackView addArrangedSubview: actionView];
+    [stackView addArrangedSubview: self.actionView];
 
     [NSLayoutConstraint activateConstraints:@[
-        [actionView.leadingAnchor constraintEqualToAnchor:stackView.leadingAnchor],
-        [actionView.trailingAnchor constraintEqualToAnchor:stackView.trailingAnchor],
+        [self.actionView.leadingAnchor constraintEqualToAnchor:stackView.leadingAnchor],
+        [self.actionView.trailingAnchor constraintEqualToAnchor:stackView.trailingAnchor],
     ]];
     
     
@@ -194,11 +192,101 @@
     return jailbreakButtonTitle;
 }
 
+- (NSArray<UIAction *> *)currentActionMenuActions
+{
+    NSMutableArray<UIAction *> *actions = [NSMutableArray new];
+    [actions addObject:[UIAction actionWithTitle:DOLocalizedString(@"Menu_Settings_Title") image:[UIImage systemImageNamed:@"gearshape" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"settings" handler:^(__kindof UIAction * _Nonnull action) {
+        [self.navigationController pushViewController:[[DOSettingsController alloc] init] animated:YES];
+    }]];
+    
+    BOOL isJailbroken = [[DOEnvironmentManager sharedManager] isJailbroken] || [[DOEnvironmentManager sharedManager] isJailbrokenWithOtherJailbreak];
+    if (isJailbroken) {
+        [actions addObject:[UIAction actionWithTitle:@"Open Sileo" image:[UIImage systemImageNamed:@"shippingbox.fill" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"open-sileo" handler:^(__kindof UIAction * _Nonnull action) {
+            NSURL *sileoURL = [NSURL URLWithString:@"sileo://"];
+            if ([[UIApplication sharedApplication] canOpenURL:sileoURL]) {
+                [[UIApplication sharedApplication] openURL:sileoURL options:@{} completionHandler:nil];
+            } else {
+                Class lsWorkspace = NSClassFromString(@"LSApplicationWorkspace");
+                if (lsWorkspace) {
+                    id ws = [lsWorkspace performSelector:@selector(defaultWorkspace)];
+                    if ([ws respondsToSelector:@selector(openApplicationWithBundleID:)]) {
+                        [ws performSelector:@selector(openApplicationWithBundleID:) withObject:@"org.coolstar.SileoStore"];
+                    }
+                }
+            }
+        }]];
+    }
+    
+    [actions addObject:[UIAction actionWithTitle:DOLocalizedString(@"Menu_Restart_SpringBoard_Title") image:[UIImage systemImageNamed:@"arrow.clockwise" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"respring" handler:^(__kindof UIAction * _Nonnull action) {
+        [self fadeToBlack:^{
+            [[DOEnvironmentManager sharedManager] respring];
+        }];
+    }]];
+    
+    [actions addObject:[UIAction actionWithTitle:DOLocalizedString(@"Menu_Reboot_Userspace_Title") image:[UIImage systemImageNamed:@"arrow.clockwise.circle" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"reboot-userspace" handler:^(__kindof UIAction * _Nonnull action) {
+        [self fadeToBlack:^{
+            [[DOEnvironmentManager sharedManager] rebootUserspace];
+        }];
+    }]];
+    
+    [actions addObject:[UIAction actionWithTitle:DOLocalizedString(@"Menu_Credits_Title") image:[UIImage systemImageNamed:@"info.circle" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"credits" handler:^(__kindof UIAction * _Nonnull action) {
+        [self.navigationController pushViewController:[[DOCreditsViewController alloc] init] animated:YES];
+    }]];
+    
+    return actions;
+}
+
+- (void)updateAniTimeWidget
+{
+    BOOL anitimeEnabled = [[DOPreferenceManager sharedManager] boolPreferenceValueForKey:@"dopamine_anitime_enabled" fallback:NO];
+    if (!anitimeEnabled) {
+        self.anitimeClockView.hidden = YES;
+        return;
+    }
+    self.anitimeClockView.hidden = NO;
+    for (UIView *sub in self.anitimeClockView.arrangedSubviews) {
+        [self.anitimeClockView removeArrangedSubview:sub];
+        [sub removeFromSuperview];
+    }
+
+    NSDate *now = [NSDate date];
+    NSDateFormatter *df = [NSDateFormatter new];
+    df.dateFormat = @"HH:mm";
+    NSString *timeStr = [df stringFromDate:now];
+
+    NSString *currStyle = [[DOPreferenceManager sharedManager] preferenceValueForKey:@"dopamine_anitime_style"] ?: @"m-static";
+    NSString *resBundlePath = [[NSBundle mainBundle] pathForResource:@"AniTime" ofType:nil];
+    if (!resBundlePath) {
+        resBundlePath = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"AniTime"];
+    }
+    NSString *styleDir = [resBundlePath stringByAppendingPathComponent:currStyle];
+
+    CGFloat digitH = 45.0;
+    for (NSUInteger i = 0; i < timeStr.length; i++) {
+        NSString *ch = [timeStr substringWithRange:NSMakeRange(i, 1)];
+        NSString *filename = [ch isEqualToString:@":"] ? @"colon.png" : [NSString stringWithFormat:@"%@.png", ch];
+        NSString *imgPath = [styleDir stringByAppendingPathComponent:filename];
+        UIImage *img = [UIImage imageWithContentsOfFile:imgPath];
+        if (img) {
+            UIImageView *iv = [[UIImageView alloc] initWithImage:img];
+            iv.contentMode = UIViewContentModeScaleAspectFit;
+            CGFloat w = (img.size.height > 0) ? (img.size.width / img.size.height * digitH) : 22.0;
+            [iv.widthAnchor constraintEqualToConstant:w].active = YES;
+            [iv.heightAnchor constraintEqualToConstant:digitH].active = YES;
+            [self.anitimeClockView addArrangedSubview:iv];
+        }
+    }
+}
+
 - (void)updateButtonUI
 {
     DOEnvironmentManager *envManager = [DOEnvironmentManager sharedManager];
     [self.jailbreakBtn.button setTitle:[self jailbreakButtonTitle] forState:UIControlStateNormal];
     self.jailbreakBtn.enabled = !envManager.isJailbroken && envManager.isSupported;
+    if (self.actionView) {
+        [self.actionView setActions:[self currentActionMenuActions]];
+    }
+    [self updateAniTimeWidget];
 }
 
 - (void)viewWillAppear:(BOOL)animated

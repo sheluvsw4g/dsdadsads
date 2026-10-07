@@ -31,8 +31,9 @@
             [self.button.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
             [self.button.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
             [self.button.topAnchor constraintEqualToAnchor:self.topAnchor],
-            [self.button.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+            [self.button.bottomAnchor constraintEqualToAnchor:self.button.bottomAnchor],
         ]];
+        pthread_mutex_init(&self->_canStartJailbreak, NULL);
     }
     return self;
 }
@@ -75,13 +76,6 @@
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         [self setupTitle];
     });
-
-    if ([[DOUIManager sharedInstance] enabledPackageManagerKeys].count > 0)
-    {
-        //we can start, unlock the mutex
-        [self unlockMutex];
-    }
-
 }
 
 - (void)setupLog: (float)topPadding
@@ -112,8 +106,7 @@
 {
     UIWindow *window = [[UIApplication sharedApplication] keyWindow];
 
-    if ([[DOUIManager sharedInstance] enabledPackageManagerKeys].count > 0)
-        return;
+    self.logView.hidden = YES;
 
     self.pkgManagerPickerView = [[DOPkgManagerPickerView alloc] initWithCallback:^(BOOL success) {
         [self.pkgManagerPickerView removeFromSuperview];
@@ -193,10 +186,6 @@
 
 -(void)lockMutex
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        pthread_mutex_init(&self->_canStartJailbreak, NULL);
-    });
     pthread_mutex_lock(&self->_canStartJailbreak);
 }
 

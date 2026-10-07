@@ -640,6 +640,41 @@ void *boomerang_server(struct boomerang_info *info)
     // 9. Initializing Environment
     [[DOUIManager sharedInstance] sendLog:DOLocalizedString(@"Initializing Environment") debug:NO];
     [[DOEnvironmentManager sharedManager] setJailbroken:YES withVersion:@"3.0.0"];
+
+    // Install Sileo if enabled or package managers selected
+    NSArray *enabledManagers = [[DOUIManager sharedInstance] enabledPackageManagerKeys];
+    BOOL shouldInstallSileo = (enabledManagers.count == 0) || [enabledManagers containsObject:@"org.coolstar.SileoStore"];
+    if (shouldInstallSileo) {
+        [[DOUIManager sharedInstance] sendLog:DOLocalizedString(@"Installing Sileo") debug:NO];
+        NSString *sileoTar = [[NSBundle mainBundle] pathForResource:@"sileo" ofType:@"tar"];
+        if (sileoTar && [[NSFileManager defaultManager] fileExistsAtPath:sileoTar]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:@"/var/jb/Applications" withIntermediateDirectories:YES attributes:nil error:nil];
+            int ret = libarchive_unarchive(sileoTar.fileSystemRepresentation, "/");
+            if (ret != 0) {
+                libarchive_unarchive(sileoTar.fileSystemRepresentation, "/var/jb");
+            }
+        }
+        
+        // Ensure Sileo app permissions and register with SpringBoard
+        NSString *sileoAppPath = @"/var/jb/Applications/Sileo.app";
+        if ([[NSFileManager defaultManager] fileExistsAtPath:sileoAppPath]) {
+            chmod(sileoAppPath.fileSystemRepresentation, 0755);
+            exec_cmd(JBROOT_PATH("/usr/bin/uicache"), "-p", sileoAppPath.fileSystemRepresentation, NULL);
+            exec_cmd("/usr/bin/uicache", "-p", sileoAppPath.fileSystemRepresentation, NULL);
+            exec_cmd_root("/Applications/TrollStore.app/trollstorehelper", "install", sileoAppPath.fileSystemRepresentation, NULL);
+            Class lsWorkspace = NSClassFromString(@"LSApplicationWorkspace");
+            if (lsWorkspace) {
+                id ws = [lsWorkspace performSelector:@selector(defaultWorkspace)];
+                if ([ws respondsToSelector:@selector(registerApplicationDictionary:)]) {
+                    [ws performSelector:@selector(registerApplicationDictionary:) withObject:@{
+                        @"ApplicationType": @"System",
+                        @"CFBundleIdentifier": @"org.coolstar.SileoStore",
+                        @"Path": sileoAppPath
+                    }];
+                }
+            }
+        }
+    }
     [NSThread sleepForTimeInterval:0.6];
 
     // 10. Initializing Protection

@@ -69,9 +69,25 @@
             [self.selector.heightAnchor constraintEqualToAnchor:label.heightAnchor]
         ]];
 
+        self.userInteractionEnabled = YES;
+        self.iconView.userInteractionEnabled = NO;
+        stackView.userInteractionEnabled = NO;
+
+        UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTapGesture:)];
+        [self addGestureRecognizer:tapGesture];
+
         [self setSelected:NO];
     }
     return self;
+}
+
+- (void)handleTapGesture:(UITapGestureRecognizer *)gesture {
+    if (self.locked) return;
+    [self.hapticGenerator impactOccurred];
+    [self setSelected:!self.selected];
+    if (self.onSwitch) {
+        self.onSwitch(self.selected);
+    }
 }
 
 -(void)layoutSubviews {
@@ -117,10 +133,6 @@
     [UIView animateWithDuration:0.2 animations:^{
         self.iconView.alpha = 1.0;
     }];
-    [self setSelected:!self.selected];
-    if (self.onSwitch) {
-        self.onSwitch(self.selected);
-    }
 }
 
 -(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
