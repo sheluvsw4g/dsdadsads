@@ -136,7 +136,7 @@
         jailbreakButtonImage = [UIImage systemImageNamed:@"lock.slash" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]];
     
     self.jailbreakBtn = [[DOJailbreakButton alloc] initWithAction: [UIAction actionWithTitle:jailbreakButtonTitle image:jailbreakButtonImage identifier:@"jailbreak" handler:^(__kindof UIAction * _Nonnull action) {
-        [actionView hide];
+        [self.actionView hide];
         [self.jailbreakBtn expandButton: self.jailbreakButtonConstraints];
 
         self.updateButton.userInteractionEnabled = NO;
