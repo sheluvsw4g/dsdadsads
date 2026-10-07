@@ -23,8 +23,7 @@
         self.layer.cornerCurve = kCACornerCurveContinuous;
         self.translatesAutoresizingMaskIntoConstraints = NO;
 
-        self.button = [DOActionMenuButton buttonWithAction:actions chevron:NO];
-        [self.button setContentHorizontalAlignment:UIControlContentHorizontalAlignmentCenter];
+        self.button = [DOActionMenuButton centeredButtonWithAction:actions];
         self.button.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:self.button];
         [NSLayoutConstraint activateConstraints:@[

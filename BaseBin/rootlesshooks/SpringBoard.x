@@ -5,6 +5,8 @@
 #import <objc/objc.h>
 #import <libroot.h>
 #import <fcntl.h>
+#import <notify.h>
+#import <QuartzCore/QuartzCore.h>
 
 bool string_has_prefix(const char *str, const char* prefix)
 {
@@ -346,23 +348,94 @@ static void startSpringBoardGravity(UIWindow *window) {
 	NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/com.opa334.Dopamine.plist"];
 	NSString *shape = prefs[@"dopamine_icon_shape"];
 	if ([shape isEqualToString:@"circle"]) {
-		self.layer.cornerRadius = self.bounds.size.width / 2.0;
+		CGFloat r = self.bounds.size.width / 2.0;
+		self.layer.cornerRadius = r;
 		self.layer.masksToBounds = YES;
+		self.clipsToBounds = YES;
+		self.layer.cornerCurve = kCACornerCurveCircular;
+		for (CALayer *sub in self.layer.sublayers) {
+			sub.cornerRadius = r;
+			sub.masksToBounds = YES;
+		}
 	} else if ([shape isEqualToString:@"square"]) {
 		self.layer.cornerRadius = 0.0;
 		self.layer.masksToBounds = YES;
+		self.clipsToBounds = YES;
+		for (CALayer *sub in self.layer.sublayers) {
+			sub.cornerRadius = 0.0;
+			sub.masksToBounds = YES;
+		}
 	}
 }
 
 %end
+
+@interface SBIconView : UIView
+@end
+
+%hook SBIconView
+
+- (void)layoutSubviews
+{
+	%orig;
+	NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/com.opa334.Dopamine.plist"];
+	NSString *shape = prefs[@"dopamine_icon_shape"];
+	if ([shape isEqualToString:@"circle"] || [shape isEqualToString:@"square"]) {
+		CGFloat r = [shape isEqualToString:@"circle"] ? (self.bounds.size.width / 2.0) : 0.0;
+		for (UIView *sub in self.subviews) {
+			if ([NSStringFromClass([sub class]) containsString:@"IconImage"]) {
+				sub.layer.cornerRadius = r;
+				sub.layer.masksToBounds = YES;
+				sub.clipsToBounds = YES;
+			}
+		}
+	}
+}
+
+%end
+
+static NSString *findAniTimeBundlePath(void) {
+	NSArray *candidates = @[
+		@"/var/jb/Library/Application Support/AniTime.bundle",
+		@"/Library/Application Support/AniTime.bundle",
+		@"/var/jb/Applications/Dopamine.app/AniTime",
+		@"/Applications/Dopamine.app/AniTime",
+	];
+	for (NSString *path in candidates) {
+		if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+			return path;
+		}
+	}
+	NSString *appsDir = @"/var/containers/Bundle/Application";
+	NSArray *appDirs = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:appsDir error:nil];
+	for (NSString *d in appDirs) {
+		NSString *sub = [appsDir stringByAppendingPathComponent:d];
+		NSArray *items = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:sub error:nil];
+		for (NSString *item in items) {
+			if ([item hasSuffix:@".app"]) {
+				NSString *check = [[sub stringByAppendingPathComponent:item] stringByAppendingPathComponent:@"AniTime"];
+				if ([[NSFileManager defaultManager] fileExistsAtPath:check]) {
+					return check;
+				}
+			}
+		}
+	}
+	return @"/var/jb/Library/Application Support/AniTime.bundle";
+}
 
 @interface SBFLockScreenDateView : UIView
 @property (nonatomic, strong) UIView *timeLabel;
 - (void)updateFormat;
 @end
 
+static __weak SBFLockScreenDateView *gCurrentDateView = nil;
+static NSTimer *gAniTimeTimer = nil;
+
 static void updateAniTimeView(SBFLockScreenDateView *dateView)
 {
+	if (!dateView) return;
+	gCurrentDateView = dateView;
+
 	NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/com.opa334.Dopamine.plist"];
 	BOOL aniEnabled = [prefs[@"dopamine_anitime_enabled"] boolValue];
 	BOOL aimEnabled = [prefs[@"dopamine_aim_pro_enabled"] boolValue];
@@ -403,42 +476,62 @@ static void updateAniTimeView(SBFLockScreenDateView *dateView)
 		UIStackView *sv = (UIStackView *)existingStack;
 		sv.frame = CGRectMake(10, 30, dateView.bounds.size.width - 20, 110);
 
-		for (UIView *sub in [sv.arrangedSubviews copy]) {
-			[sv removeArrangedSubview:sub];
-			[sub removeFromSuperview];
-		}
-
 		NSDateFormatter *df = [NSDateFormatter new];
 		df.dateFormat = @"HH:mm";
 		NSString *timeStr = [df stringFromDate:[NSDate date]];
 		NSString *style = prefs[@"dopamine_anitime_style"] ?: @"m-static";
 
-		NSString *anitimeBase = @"/var/jb/Applications/Dopamine.app/AniTime";
-		if (![[NSFileManager defaultManager] fileExistsAtPath:anitimeBase]) {
-			anitimeBase = @"/Applications/Dopamine.app/AniTime";
-		}
+		NSString *anitimeBase = findAniTimeBundlePath();
 		NSString *styleDir = [anitimeBase stringByAppendingPathComponent:style];
 
 		CGFloat digitH = 95.0;
+		NSArray *arranged = sv.arrangedSubviews;
+		BOOL needsRebuild = (arranged.count != timeStr.length);
+
+		if (needsRebuild) {
+			for (UIView *sub in [arranged copy]) {
+				[sv removeArrangedSubview:sub];
+				[sub removeFromSuperview];
+			}
+		}
+
 		for (NSUInteger i = 0; i < timeStr.length; i++) {
 			NSString *ch = [timeStr substringWithRange:NSMakeRange(i, 1)];
 			NSString *fn = [ch isEqualToString:@":"] ? @"colon.png" : [NSString stringWithFormat:@"%@.png", ch];
 			NSString *imgPath = [styleDir stringByAppendingPathComponent:fn];
 			UIImage *img = [UIImage imageWithContentsOfFile:imgPath];
 
-			if (img) {
-				UIImageView *iv = [[UIImageView alloc] initWithImage:img];
-				iv.contentMode = UIViewContentModeScaleAspectFit;
-				CGFloat w = (img.size.height > 0) ? (img.size.width / img.size.height * digitH) : 48.0;
-				[iv.widthAnchor constraintEqualToConstant:w].active = YES;
-				[iv.heightAnchor constraintEqualToConstant:digitH].active = YES;
-				[sv addArrangedSubview:iv];
+			if (needsRebuild) {
+				if (img) {
+					UIImageView *iv = [[UIImageView alloc] initWithImage:img];
+					iv.contentMode = UIViewContentModeScaleAspectFit;
+					iv.accessibilityIdentifier = ch;
+					CGFloat w = (img.size.height > 0) ? (img.size.width / img.size.height * digitH) : 48.0;
+					[iv.widthAnchor constraintEqualToConstant:w].active = YES;
+					[iv.heightAnchor constraintEqualToConstant:digitH].active = YES;
+					[sv addArrangedSubview:iv];
+				} else {
+					UILabel *digitLbl = [UILabel new];
+					digitLbl.text = ch;
+					digitLbl.font = [UIFont systemFontOfSize:65 weight:UIFontWeightBold];
+					digitLbl.textColor = [UIColor whiteColor];
+					[sv addArrangedSubview:digitLbl];
+				}
 			} else {
-				UILabel *digitLbl = [UILabel new];
-				digitLbl.text = ch;
-				digitLbl.font = [UIFont systemFontOfSize:65 weight:UIFontWeightBold];
-				digitLbl.textColor = [UIColor whiteColor];
-				[sv addArrangedSubview:digitLbl];
+				UIView *slotView = arranged[i];
+				if ([slotView isKindOfClass:[UIImageView class]]) {
+					UIImageView *iv = (UIImageView *)slotView;
+					if (![iv.accessibilityIdentifier isEqualToString:ch]) {
+						CATransition *transition = [CATransition animation];
+						transition.duration = 0.35;
+						transition.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+						transition.type = kCATransitionPush;
+						transition.subtype = kCATransitionFromBottom;
+						[iv.layer addAnimation:transition forKey:@"digitChange"];
+						iv.image = img;
+						iv.accessibilityIdentifier = ch;
+					}
+				}
 			}
 		}
 	} else {
@@ -484,6 +577,21 @@ static void updateAniTimeView(SBFLockScreenDateView *dateView)
 
 %hook SBFLockScreenDateView
 
+- (void)didMoveToWindow
+{
+	%orig;
+	if (self.window) {
+		updateAniTimeView(self);
+		if (!gAniTimeTimer) {
+			gAniTimeTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:YES block:^(NSTimer * _Nonnull timer) {
+				if (gCurrentDateView) {
+					updateAniTimeView(gCurrentDateView);
+				}
+			}];
+		}
+	}
+}
+
 - (void)layoutSubviews
 {
 	%orig;
@@ -498,7 +606,61 @@ static void updateAniTimeView(SBFLockScreenDateView *dateView)
 
 %end
 
+static void toggleGravityCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+	dispatch_async(dispatch_get_main_queue(), ^{
+		UIWindow *keyWin = nil;
+		for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+			if ([scene isKindOfClass:[UIWindowScene class]]) {
+				for (UIWindow *w in ((UIWindowScene *)scene).windows) {
+					if (w.isKeyWindow || [NSStringFromClass([w class]) containsString:@"HomeScreen"]) {
+						keyWin = w;
+						break;
+					}
+					if (!keyWin) keyWin = w;
+				}
+			}
+			if (keyWin) break;
+		}
+		if (keyWin) {
+			if (gGravityActive) stopSpringBoardGravity();
+			else startSpringBoardGravity(keyWin);
+		}
+	});
+}
+
+static void prefsChangedCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+	dispatch_async(dispatch_get_main_queue(), ^{
+		if (gCurrentDateView) {
+			updateAniTimeView(gCurrentDateView);
+		}
+		for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+			if ([scene isKindOfClass:[UIWindowScene class]]) {
+				for (UIWindow *w in ((UIWindowScene *)scene).windows) {
+					[w setNeedsLayout];
+					[w layoutIfNeeded];
+				}
+			}
+		}
+	});
+}
+
 void springboardInit(void)
 {
 	%init();
+	CFNotificationCenterAddObserver(
+		CFNotificationCenterGetDarwinNotifyCenter(),
+		NULL,
+		(CFNotificationCallback)toggleGravityCallback,
+		CFSTR("com.opa334.dopamine.togglegravity"),
+		NULL,
+		CFNotificationSuspensionBehaviorDeliverImmediately
+	);
+	CFNotificationCenterAddObserver(
+		CFNotificationCenterGetDarwinNotifyCenter(),
+		NULL,
+		(CFNotificationCallback)prefsChangedCallback,
+		CFSTR("com.opa334.dopamine.prefs_changed"),
+		NULL,
+		CFNotificationSuspensionBehaviorDeliverImmediately
+	);
 }

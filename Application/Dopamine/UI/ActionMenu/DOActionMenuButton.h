@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL bottomSeparator;
 
 +(DOActionMenuButton*)buttonWithAction:(UIAction *)action chevron:(BOOL)chevron;
++(DOActionMenuButton*)centeredButtonWithAction:(UIAction *)action;
 
 @end
 

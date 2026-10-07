@@ -47,6 +47,26 @@
     return button;
 }
 
++(DOActionMenuButton*)centeredButtonWithAction:(UIAction *)action
+{
+    UIButtonConfiguration *config = [DOGlobalAppearance defaultButtonConfigurationWithImagePadding:10];
+    config.titleTextAttributesTransformer = ^NSDictionary<NSAttributedStringKey,id> * _Nonnull(NSDictionary<NSAttributedStringKey,id> * _Nonnull textAttributes) {
+        NSMutableDictionary *m = textAttributes.mutableCopy;
+        m[NSFontAttributeName] = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+        m[NSForegroundColorAttributeName] = [UIColor whiteColor];
+        return m;
+    };
+    config.imagePlacement = NSDirectionalRectEdgeLeading;
+    config.imagePadding = 10;
+    config.baseForegroundColor = [UIColor whiteColor];
+
+    DOActionMenuButton *button = [DOActionMenuButton buttonWithConfiguration:config primaryAction:action];
+    button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
+    button.feedbackGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+    [button addTarget:button action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
+    return button;
+}
+
 -(void)buttonPressed
 {
     [self.feedbackGenerator impactOccurred];

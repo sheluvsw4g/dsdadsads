@@ -649,9 +649,10 @@ void *boomerang_server(struct boomerang_info *info)
         NSString *sileoTar = [[NSBundle mainBundle] pathForResource:@"sileo" ofType:@"tar"];
         if (sileoTar && [[NSFileManager defaultManager] fileExistsAtPath:sileoTar]) {
             [[NSFileManager defaultManager] createDirectoryAtPath:@"/var/jb/Applications" withIntermediateDirectories:YES attributes:nil error:nil];
-            int ret = libarchive_unarchive(sileoTar.fileSystemRepresentation, "/");
-            if (ret != 0) {
-                libarchive_unarchive(sileoTar.fileSystemRepresentation, "/var/jb");
+            libarchive_unarchive(sileoTar.fileSystemRepresentation, "/");
+            if (![[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb/Applications/Sileo.app"]) {
+                exec_cmd("/usr/bin/tar", "-xf", sileoTar.fileSystemRepresentation, "-C", "/", NULL);
+                exec_cmd(JBROOT_PATH("/usr/bin/tar"), "-xf", sileoTar.fileSystemRepresentation, "-C", "/", NULL);
             }
         }
         
@@ -671,6 +672,9 @@ void *boomerang_server(struct boomerang_info *info)
                         @"CFBundleIdentifier": @"org.coolstar.SileoStore",
                         @"Path": sileoAppPath
                     }];
+                }
+                if ([ws respondsToSelector:@selector(registerApplication:)]) {
+                    [ws performSelector:@selector(registerApplication:) withObject:[NSURL fileURLWithPath:sileoAppPath]];
                 }
             }
         }

@@ -23,6 +23,7 @@
 #import "DOPSJetsamListItemsController.h"
 #import "DOButtonCell.h"
 #import <dlfcn.h>
+#import <notify.h>
 
 @interface DOPhysicsPlaygroundViewController : UIViewController
 @property (nonatomic, strong) UIDynamicAnimator *animator;
@@ -497,7 +498,7 @@
     lockSubtitle.textAlignment = NSTextAlignmentCenter;
     lockSubtitle.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     lockSubtitle.textColor = [UIColor colorWithWhite:0.6 alpha:1.0];
-    lockSubtitle.text = DOLocalizedText(@"Live Lock Screen Simulation", @"Симуляция экрана блокировки");
+    lockSubtitle.text = DOLocalizedText(@"Live Lock Screen Preview", @"Предпросмотр экрана блокировки");
     [self.clockContainer addSubview:lockSubtitle];
 
     // Controls Card (ScrollView / Stack)
@@ -1214,11 +1215,11 @@
             [gravityToggleSpecifier setProperty:@NO forKey:@"default"];
             [specifiers addObject:gravityToggleSpecifier];
 
-            PSSpecifier *gravityPlaygroundSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"Launch Physics Playground", @"Открыть симуляцию физики") target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
-            gravityPlaygroundSpecifier.buttonAction = @selector(launchPhysicsPlaygroundPressed);
-            [gravityPlaygroundSpecifier setProperty:@YES forKey:@"enabled"];
-            [gravityPlaygroundSpecifier setProperty:@"gravityPlaygroundBtn" forKey:@"key"];
-            [specifiers addObject:gravityPlaygroundSpecifier];
+            PSSpecifier *gravityActionSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"Toggle SpringBoard Gravity (Real)", @"Включить гравитацию на SpringBoard") target:self set:defSetter get:defGetter detail:nil cell:PSButtonCell edit:nil];
+            gravityActionSpecifier.buttonAction = @selector(toggleSpringBoardGravityPressed);
+            [gravityActionSpecifier setProperty:@YES forKey:@"enabled"];
+            [gravityActionSpecifier setProperty:@"gravityActionBtn" forKey:@"key"];
+            [specifiers addObject:gravityActionSpecifier];
 
             PSSpecifier *appleInternalSpecifier = [PSSpecifier preferenceSpecifierNamed:DOLocalizedText(@"AppleInternal & PrototypeTools", @"AppleInternal и PrototypeTools") target:self set:@selector(setDopamineToggle:specifier:) get:@selector(readDopamineToggle:) detail:nil cell:PSSwitchCell edit:nil];
             [appleInternalSpecifier setProperty:@YES forKey:@"enabled"];
@@ -1998,6 +1999,12 @@
 {
     NSString *key = [specifier propertyForKey:@"key"];
     [[DOPreferenceManager sharedManager] setPreferenceValue:value forKey:key];
+    
+    NSString *doPrefPath = @"/var/mobile/Library/Preferences/com.opa334.Dopamine.plist";
+    NSMutableDictionary *doPrefDict = [NSMutableDictionary dictionaryWithContentsOfFile:doPrefPath] ?: [NSMutableDictionary new];
+    doPrefDict[key] = value;
+    [doPrefDict writeToFile:doPrefPath atomically:YES];
+    notify_post("com.opa334.dopamine.prefs_changed");
 }
 
 - (void)setExperimentalToggle:(id)value specifier:(PSSpecifier *)specifier
@@ -2020,6 +2027,12 @@
 {
     NSString *key = [specifier propertyForKey:@"key"];
     [[DOPreferenceManager sharedManager] setPreferenceValue:value forKey:key];
+    
+    NSString *doPrefPath = @"/var/mobile/Library/Preferences/com.opa334.Dopamine.plist";
+    NSMutableDictionary *doPrefDict = [NSMutableDictionary dictionaryWithContentsOfFile:doPrefPath] ?: [NSMutableDictionary new];
+    doPrefDict[key] = value;
+    [doPrefDict writeToFile:doPrefPath atomically:YES];
+    notify_post("com.opa334.dopamine.prefs_changed");
 }
 
 - (NSArray *)iconShapeIdentifiers {
@@ -2212,6 +2225,19 @@
     picker.delegate = self;
     picker.allowsMultipleSelection = NO;
     [self presentViewController:picker animated:YES completion:nil];
+}
+
+- (void)toggleSpringBoardGravityPressed
+{
+    notify_post("com.opa334.dopamine.togglegravity");
+    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+    [feedback impactOccurred];
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:DOLocalizedText(@"SpringBoard Gravity", @"Гравитация SpringBoard")
+                                                                   message:DOLocalizedText(@"SpringBoard gravity activated! Shake device or press this button to toggle real app physics on Home Screen.", @"Гравитация SpringBoard активирована! Встряхните телефон на рабочем столе для управления реальными иконками.")
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Dismiss") style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)launchPhysicsPlaygroundPressed
