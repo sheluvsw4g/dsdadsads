@@ -194,7 +194,8 @@
             if (lsWorkspace) {
                 id ws = [lsWorkspace performSelector:@selector(defaultWorkspace)];
                 if ([ws respondsToSelector:@selector(openApplicationWithBundleID:)]) {
-                    opened = ((BOOL (*)(id, SEL, id))objc_msgSend)(ws, @selector(openApplicationWithBundleID:), @"org.coolstar.SileoStore");
+                    [ws performSelector:@selector(openApplicationWithBundleID:) withObject:@"org.coolstar.SileoStore"];
+                    opened = YES;
                 }
             }
             if (!opened) {
