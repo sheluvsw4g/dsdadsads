@@ -8,6 +8,7 @@
 #include <paths.h>
 #include <util.h>
 #include <ptrauth.h>
+#include <dirent.h>
 #include <libjailbreak/jbclient_xpc.h>
 #include <libjailbreak/codesign.h>
 #include <libjailbreak/jbroot.h>
@@ -483,13 +484,73 @@ __attribute__((constructor)) static void initializer(void)
 		}
 #endif
 		// Load tweaks if desired
-		// We can hardcode /var/jb here since if it doesn't exist, loading TweakLoader.dylib is not going to work anyways
 		if (should_enable_tweaks()) {
+			bool loadedViaLoader = false;
 			const char *tweakLoaderPath = "/var/jb/usr/lib/TweakLoader.dylib";
 			if (access(tweakLoaderPath, F_OK) == 0) {
 				void *tweakLoaderHandle = dlopen(tweakLoaderPath, RTLD_NOW);
 				if (tweakLoaderHandle != NULL) {
 					dlclose(tweakLoaderHandle);
+					loadedViaLoader = true;
+				}
+			}
+
+			// Fallback: If TweakLoader.dylib is missing or ElleKit isn't bootstrapped yet, load tweaks directly from DynamicLibraries
+			if (!loadedViaLoader) {
+				const char *dirs[] = {
+					"/var/jb/Library/MobileSubstrate/DynamicLibraries",
+					"/Library/MobileSubstrate/DynamicLibraries"
+				};
+				for (size_t d = 0; d < sizeof(dirs) / sizeof(dirs[0]); d++) {
+					DIR *dir = opendir(dirs[d]);
+					if (dir) {
+						struct dirent *ent;
+						while ((ent = readdir(dir)) != NULL) {
+							if (ent->d_name[0] == '.') continue;
+							size_t len = strlen(ent->d_name);
+							if (len > 6 && !strcmp(&ent->d_name[len - 6], ".dylib")) {
+								char dylibPath[PATH_MAX];
+								snprintf(dylibPath, sizeof(dylibPath), "%s/%s", dirs[d], ent->d_name);
+								// Check filter plist if exists
+								char plistPath[PATH_MAX];
+								snprintf(plistPath, sizeof(plistPath), "%s/%.*s.plist", dirs[d], (int)(len - 6), ent->d_name);
+								bool shouldLoad = true;
+								if (access(plistPath, F_OK) == 0) {
+									// Read simple bundle filter
+									FILE *f = fopen(plistPath, "rb");
+									if (f) {
+										fseek(f, 0, SEEK_END);
+										long fsize = ftell(f);
+										fseek(f, 0, SEEK_SET);
+										if (fsize > 0 && fsize < 16384) {
+											char *buf = malloc(fsize + 1);
+											if (buf) {
+												fread(buf, 1, fsize, f);
+												buf[fsize] = '\0';
+												if (strstr(buf, "Bundles") != NULL) {
+													// Filter specified: only load if main executable/bundle matches or in SpringBoard
+													const char *prog = getprogname();
+													if (strstr(buf, "com.apple.springboard") != NULL && (!strcmp(prog, "SpringBoard") || !strcmp(gExecutablePath, "/System/Library/CoreServices/SpringBoard.app/SpringBoard"))) {
+														shouldLoad = true;
+													} else if (strstr(buf, prog) != NULL) {
+														shouldLoad = true;
+													} else {
+														shouldLoad = false;
+													}
+												}
+												free(buf);
+											}
+										}
+										fclose(f);
+									}
+								}
+								if (shouldLoad) {
+									dlopen(dylibPath, RTLD_NOW | RTLD_GLOBAL);
+								}
+							}
+						}
+						closedir(dir);
+					}
 				}
 			}
 		}
